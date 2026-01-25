@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone, education, skills } = req.body;
+    const { name, email, password, phone, education, skills } = req.body;
 
     if (!name || !email || !password) {
       res.status(400);
@@ -203,7 +203,7 @@ const googleLogin = async (req, res, next) => {
       skills: user.skills,
       token: generateToken(user._id),
     });
-  } catch (error) {
+  } catch (_error) {
     res.status(400);
     next(new Error("Google authentication failed"));
   }

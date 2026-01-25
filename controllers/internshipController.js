@@ -2,13 +2,6 @@ const InternshipApplication = require("../models/InternshipApplication");
 const Document = require("../models/Document");
 const asyncHandler = require("../middleware/asyncHandler");
 
-const programs = [
-  { title: 'Web Development', basePrice: 2000 },
-  { title: 'Data Science', basePrice: 2500 },
-  { title: 'Cloud Computing', basePrice: 2200 },
-  { title: 'UI/UX Design', basePrice: 1800 }
-];
-
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
 // @access  Private

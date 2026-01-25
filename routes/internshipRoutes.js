@@ -8,7 +8,6 @@ const {
   getMyInternshipApplications,
 } = require("../controllers/internshipController");
 const { protect, admin } = require("../middleware/authMiddleware");
-const { contactLimiter } = require("../middleware/rateLimiter");
 
 router.post("/apply", protect, applyForInternship);
 router.get("/my-applications", protect, getMyInternshipApplications);
