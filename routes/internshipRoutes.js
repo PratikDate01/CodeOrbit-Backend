@@ -6,17 +6,11 @@ const {
   updateInternshipStatus,
   deleteInternshipApplication,
   getMyInternshipApplications,
-  createInternshipOrder,
-  verifyInternshipPayment,
-  razorpayWebhook,
 } = require("../controllers/internshipController");
 const { protect, admin } = require("../middleware/authMiddleware");
 const { contactLimiter } = require("../middleware/rateLimiter");
 
-router.post("/", contactLimiter, protect, applyForInternship);
-router.post("/webhook", razorpayWebhook);
-router.post("/create-order", protect, createInternshipOrder);
-router.post("/verify-payment", protect, verifyInternshipPayment);
+router.post("/apply", protect, applyForInternship);
 router.get("/my-applications", protect, getMyInternshipApplications);
 
 // Admin routes

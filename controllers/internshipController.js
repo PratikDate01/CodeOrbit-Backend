@@ -1,13 +1,6 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const Document = require("../models/Document");
 const asyncHandler = require("../middleware/asyncHandler");
-const Razorpay = require("razorpay");
-const crypto = require("crypto");
-
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
 
 const programs = [
   { title: 'Web Development', basePrice: 2000 },
@@ -16,24 +9,11 @@ const programs = [
   { title: 'UI/UX Design', basePrice: 1800 }
 ];
 
-const calculateServerFee = (domain, duration) => {
-  const program = programs.find(p => p.title === domain);
-  if (!program) return 0;
-  return program.basePrice * duration;
-};
-
-// @desc    Create Internship Application (Direct, Razorpay Removed)
-// @route   POST /api/internships/create-order
+// @desc    Apply for Internship
+// @route   POST /api/internships/apply
 // @access  Private
-const createInternshipOrder = asyncHandler(async (req, res) => {
+const applyForInternship = asyncHandler(async (req, res) => {
   const { preferredDomain, duration, formData } = req.body;
-
-  const amount = calculateServerFee(preferredDomain, duration);
-
-  if (amount <= 0) {
-    res.status(400);
-    throw new Error("Invalid domain or duration");
-  }
 
   // Check if user already has a pending or active application for this domain
   const existingApp = await InternshipApplication.findOne({
@@ -49,66 +29,16 @@ const createInternshipOrder = asyncHandler(async (req, res) => {
 
   const application = await InternshipApplication.create({
     ...formData,
-    amount,
-    paymentStatus: "Verified", // Automatically verify for now since payment is removed
+    preferredDomain,
+    duration,
     user: req.user._id,
     status: "New"
   });
 
   res.status(201).json({
     message: "Application submitted successfully",
-    application,
-    id: application._id // Mocking order id if frontend expects it
+    application
   });
-});
-
-// @desc    Verify Payment (Mocked for backward compatibility)
-// @route   POST /api/internships/verify-payment
-// @access  Private
-const verifyInternshipPayment = asyncHandler(async (req, res) => {
-  // Just return success as payment is removed
-  res.status(200).json({ message: "Payment system bypassed" });
-});
-
-// @desc    Razorpay Webhook
-// @route   POST /api/internships/webhook
-// @access  Public
-const razorpayWebhook = asyncHandler(async (req, res) => {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-
-  const shasum = crypto.createHmac("sha256", secret);
-  shasum.update(JSON.stringify(req.body));
-  const digest = shasum.digest("hex");
-
-  if (digest === req.headers["x-razorpay-signature"]) {
-    const event = req.body.event;
-
-    if (event === "payment.captured") {
-      const payment = req.body.payload.payment.entity;
-      const orderId = payment.order_id;
-
-      const application = await InternshipApplication.findOne({ razorpayOrderId: orderId });
-      
-      if (application && application.paymentStatus !== "Verified") {
-        application.paymentStatus = "Verified";
-        application.razorpayPaymentId = payment.id;
-        // signature is not available in webhook payload easily usually, 
-        // but paymentStatus Verified is what matters for admin.
-        await application.save();
-        console.log("Payment verified via webhook for order:", orderId);
-      }
-    }
-    res.json({ status: "ok" });
-  } else {
-    res.status(400).send("Invalid signature");
-  }
-});
-
-const applyForInternship = asyncHandler(async (req, res) => {
-  // This function might be deprecated or used for free ones if any, 
-  // but for now we follow the verify-payment flow.
-  res.status(400);
-  throw new Error("Please use the payment flow to apply");
 });
 
 // @desc    Get all internship applications
@@ -206,7 +136,4 @@ module.exports = {
   updateInternshipStatus,
   deleteInternshipApplication,
   getMyInternshipApplications,
-  createInternshipOrder,
-  verifyInternshipPayment,
-  razorpayWebhook,
 };

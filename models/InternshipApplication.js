@@ -42,10 +42,6 @@ const internshipApplicationSchema = mongoose.Schema(
       required: true,
       default: 1
     },
-    amount: {
-      type: Number,
-      required: true
-    },
     startDate: {
       type: Date,
     },
@@ -56,20 +52,6 @@ const internshipApplicationSchema = mongoose.Schema(
       type: String,
       enum: ["New", "Reviewed", "Contacted", "Selected", "Rejected", "Approved", "Completed"],
       default: "New",
-    },
-    razorpayOrderId: {
-      type: String,
-    },
-    razorpayPaymentId: {
-      type: String,
-    },
-    razorpaySignature: {
-      type: String,
-    },
-    paymentStatus: {
-      type: String,
-      enum: ["Pending", "Verified", "Failed"],
-      default: "Pending",
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
