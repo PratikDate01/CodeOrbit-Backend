@@ -17,9 +17,10 @@ const app = express();
 app.use(helmet());
 app.use(morgan("dev"));
 const allowedOrigins = [
+  process.env.FRONTEND_URL,
   "https://code-orbit-tech.vercel.app",
   "http://localhost:3000"
-];
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
