@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.6; 
+            color: #1e293b; 
+            margin: 0;
+            padding: 0;
+        }
+        .page {
+            padding: 10mm 20mm;
+            position: relative;
+            height: 297mm;
+            width: 210mm;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .header {
+            position: relative;
+            height: 100px;
+            border-bottom: 2px solid #3b82f6;
+            margin-bottom: 20px;
+        }
+        .company-logo {
+            height: 160px;
+            position: absolute;
+            top: -30px;
+            left: 0;
+            z-index: 10;
+        }
+        .partner-logos {
+            position: absolute;
+            top: -15px;
+            right: 0;
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            z-index: 10;
+        }
+        .partner-logo {
+            height: 100px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .contact-details {
+            text-align: right;
+            font-size: 10px;
+            color: #475569;
+            line-height: 1.4;
+        }
+        
+        .date-line { font-size: 13px; margin-bottom: 15px; }
+        
+        .recipient { margin-bottom: 15px; font-weight: 700; font-size: 14px; color: #0f172a; }
+        
+        .subject { 
+            text-align: center; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            text-decoration: underline;
+            margin-bottom: 15px;
+            font-size: 15px;
+            color: #1e3a8a;
+        }
+        
+        .body-text { 
+            font-size: 14px; 
+            text-align: justify; 
+            flex-grow: 1;
+            line-height: 1.5;
+        }
+        .body-text p { margin-bottom: 10px; }
+        
+        .closing { 
+            margin-top: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 10px;
+        }
+        
+        .footer-strip {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .verify-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            font-size: 10px;
+            color: #94a3b8;
+        }
+        .qr-tiny { width: 80px; height: 80px; border: 1px solid #f1f5f9; padding: 5px; margin-bottom: 5px; }
+        
+        .signature-block { 
+            position: relative;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 220px;
+        }
+        .company-stamp {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 130px;
+            opacity: 0.85;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .sig-line { 
+            width: 100%;
+            border-top: 2px solid #1e293b; 
+            margin-bottom: 8px; 
+            margin-top: 60px;
+        }
+        .sig-name { font-weight: 700; font-size: 18px; margin-bottom: 2px; color: #0f172a; }
+        .sig-dept { font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        .accent-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: #1e3a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="accent-bar"></div>
+        
+        <div class="header">
+            <img src="{{companyLogo}}" class="company-logo" alt="Company Logo">
+            <div class="partner-logos">
+                <img src="{{msmeLogo}}" class="partner-logo" alt="MSME Logo">
+                <img src="{{aicteLogo}}" class="partner-logo" alt="AICTE Logo">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+            <div class="date-line">Date: {{date}}</div>
+            <div class="contact-details">
+                <p><strong>CodeOrbit Solutions</strong></p>
+                <p>Whitehouse Vadgaon Bk Pune 41</p>
+                <p>codeorbit.internship@gmail.com | www.codeorbit.in</p>
+            </div>
+        </div>
+
+        <div class="recipient">TO WHOMSOEVER IT MAY CONCERN</div>
+
+        <div class="subject">Subject: Internship Completion Letter</div>
+
+        <div class="body-text">
+            <p>This is to certify that <strong>{{name}}</strong> has successfully completed a professional internship program at <strong>CodeOrbit Solutions</strong> in the domain of <strong>{{role}}</strong>.</p>
+            
+            <p>The internship tenure was from <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>. During this period, {{name}} worked on various live projects, demonstrating technical competence, learning agility, and a strong professional work ethic.</p>
+            
+            <p>Their contributions were significant to our project's success, and they consistently met all deadlines with high-quality deliverables. We found {{name}} to be inquisitive, hard-working, and a great team player.</p>
+            
+            <p>We wish {{name}} the very best for all future professional endeavors.</p>
+        </div>
+
+        <div class="closing">
+            <div class="footer-strip">
+                <div class="verify-badge">
+                    <img src="{{qrCode}}" class="qr-tiny">
+                    <p style="font-weight: 700; color: #64748b; margin: 0;">Verify Authenticity</p>
+                    <p style="margin: 0;">ID: {{verificationId}}</p>
+                    <p style="margin: 0; font-size: 8px;">This is a computer-generated document and does not require a physical signature.</p>
+                </div>
+            </div>
+
+            <div class="signature-block">
+                <img src="{{companyStamp}}" class="company-stamp" alt="Company Stamp">
+                <div class="sig-line"></div>
+                <div class="sig-name">Tejas Date</div>
+                <div class="sig-dept">Co-Founder</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

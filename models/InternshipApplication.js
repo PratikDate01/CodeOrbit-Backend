@@ -1,0 +1,87 @@
+const mongoose = require("mongoose");
+
+const internshipApplicationSchema = mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+    },
+    college: {
+      type: String,
+      required: true,
+    },
+    course: {
+      type: String,
+      required: true,
+    },
+    year: {
+      type: String,
+      required: true,
+    },
+    skills: {
+      type: String,
+      required: true,
+    },
+    experience: {
+      type: String,
+    },
+    preferredDomain: {
+      type: String,
+      required: true,
+    },
+    duration: {
+      type: Number,
+      required: true,
+      default: 1
+    },
+    amount: {
+      type: Number,
+      required: true
+    },
+    startDate: {
+      type: Date,
+    },
+    endDate: {
+      type: Date,
+    },
+    status: {
+      type: String,
+      enum: ["New", "Reviewed", "Contacted", "Selected", "Rejected", "Approved", "Completed"],
+      default: "New",
+    },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
+      type: String,
+    },
+    paymentStatus: {
+      type: String,
+      enum: ["Pending", "Verified", "Failed"],
+      default: "Pending",
+    },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+module.exports = mongoose.model(
+  "InternshipApplication",
+  internshipApplicationSchema
+);

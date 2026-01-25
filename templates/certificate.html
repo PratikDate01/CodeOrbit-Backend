@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: white;
+            font-family: 'Inter', sans-serif;
+            color: #1e293b;
+        }
+        .certificate-container {
+            width: 297mm;
+            height: 210mm;
+            padding: 10mm;
+            position: relative;
+            background: #fff;
+            overflow: hidden;
+        }
+        
+        .outer-border {
+            width: 100%;
+            height: 100%;
+            border: 15px double #1e3a8a;
+            padding: 5px;
+            position: relative;
+            background: #fff;
+        }
+        .inner-border {
+            width: 100%;
+            height: 100%;
+            border: 2px solid #1e3a8a;
+            padding: 25px 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header-logos {
+            width: 100%;
+            height: 90px;
+            position: relative;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .company-logo { 
+            height: 100px;
+            object-fit: contain;
+        }
+        .partner-logo { 
+            height: 70px; 
+            object-fit: contain;
+        }
+        /* Position individual partner logos */
+        .header-logos img:first-child { left: 0; }
+        .header-logos img:last-child { right: 0; }
+        
+        .main-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 64px;
+            color: #1e3a8a;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .sub-title {
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 10px;
+            color: #64748b;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .present-text { font-size: 22px; font-style: italic; color: #64748b; margin-bottom: 10px; }
+        
+        .student-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 56px;
+            color: #0f172a;
+            margin: 10px 0 20px 0;
+            border-bottom: 2px solid #e2e8f0;
+            display: inline-block;
+            padding: 0 60px 5px 60px;
+        }
+        
+        .achievement-text {
+            font-size: 18px;
+            max-width: 850px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #334155;
+        }
+        .achievement-text strong { color: #1e3a8a; font-weight: 700; }
+        
+        .footer {
+            margin-top: auto;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 0 20px 10px 20px;
+        }
+        
+        .sig-box { text-align: center; width: 220px; position: relative; }
+        .sig-stamp {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 130px;
+            opacity: 0.85;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .sig-line { border-top: 2px solid #1e293b; margin-bottom: 8px; margin-top: 60px; }
+        .sig-name { font-weight: 700; font-size: 18px; color: #0f172a; }
+        .sig-role { font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+        
+        .qr-section { text-align: left; }
+        .qr-code { width: 90px; height: 90px; margin-bottom: 5px; border: 1px solid #f1f5f9; padding: 5px; }
+        .verify-text { font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+        .verify-id { font-size: 11px; color: #64748b; font-weight: 700; }
+        
+        /* Decorative Corners */
+        .corner {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border: 6px solid #1e3a8a;
+            z-index: 10;
+        }
+        .top-left { top: -15px; left: -15px; border-right: none; border-bottom: none; }
+        .top-right { top: -15px; right: -15px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: -15px; left: -15px; border-right: none; border-top: none; }
+        .bottom-right { bottom: -15px; right: -15px; border-left: none; border-top: none; }
+    </style>
+</head>
+<body>
+    <div class="certificate-container">
+        <div class="outer-border">
+            <div class="inner-border">
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+                
+                <div class="header-logos">
+                    <img src="{{msmeLogo}}" class="partner-logo" alt="MSME Logo">
+                    <img src="{{companyLogo}}" class="company-logo" alt="Company Logo">
+                    <img src="{{aicteLogo}}" class="partner-logo" alt="AICTE Logo">
+                </div>
+                
+                <h1 class="main-title">Certificate</h1>
+                <div class="sub-title">of Internship Completion</div>
+                
+                <div class="present-text">This certificate is proudly presented to</div>
+                <div class="student-name">{{name}}</div>
+                
+                <div class="achievement-text">
+                    For successfully completing a professional internship in <strong>{{role}}</strong> at <strong>CodeOrbit Solutions</strong>. 
+                    The internship tenure was from <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>. 
+                    During this program, the candidate demonstrated exceptional technical proficiency, 
+                    dedication, and contributed significantly to our organizational goals.
+                </div>
+                
+                <div class="footer">
+                    <div class="qr-section">
+                        <img src="{{qrCode}}" class="qr-code">
+                        <div class="verify-text">verify.codeorbit.in</div>
+                        <div class="verify-id">ID: {{verificationId}}</div>
+                    </div>
+                    
+                    <div class="sig-box">
+                        <img src="{{companyStamp}}" class="sig-stamp" alt="Company Stamp">
+                        <div class="sig-line"></div>
+                        <div class="sig-name">Tejas Date</div>
+                        <div class="sig-role">Co-Founder</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

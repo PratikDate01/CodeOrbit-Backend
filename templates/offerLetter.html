@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.5; 
+            color: #1e293b; 
+            margin: 0;
+            padding: 0;
+        }
+        .page {
+            padding: 10mm 20mm;
+            position: relative;
+            height: 297mm;
+            width: 210mm;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            position: relative;
+            height: 100px;
+            border-bottom: 2px solid #3b82f6;
+            margin-bottom: 20px;
+        }
+        .company-logo {
+            height: 160px;
+            position: absolute;
+            top: -30px;
+            left: 0;
+            z-index: 10;
+        }
+        .partner-logos {
+            position: absolute;
+            top: -15px;
+            right: 0;
+            display: flex;
+            gap: 25px;
+            align-items: center;
+            z-index: 10;
+        }
+        .partner-logo {
+            height: 100px;
+            width: auto;
+            object-fit: contain;
+        }
+        
+        .company-info { text-align: right; font-size: 10px; color: #475569; }
+        
+        .doc-title { 
+            font-size: 22px; 
+            font-weight: 700; 
+            text-align: center; 
+            margin: 10px 0 15px 0;
+            color: #1e3a8a;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .meta-info { margin-bottom: 10px; font-size: 13px; }
+        .meta-info p { margin: 2px 0; }
+        
+        .content { font-size: 13px; text-align: justify; flex-grow: 1; }
+        .content p { margin-bottom: 8px; line-height: 1.5; }
+        
+        .footer {
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding-bottom: 10px;
+        }
+        
+        .qr-area { 
+            text-align: left; 
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .qr-image { width: 80px; height: 80px; margin-bottom: 8px; border: 1px solid #f1f5f9; padding: 5px; }
+        .verify-text { font-size: 10px; color: #94a3b8; line-height: 1.4; }
+        
+        .signature-area { 
+            position: relative;
+            width: 220px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .company-stamp {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 130px;
+            opacity: 0.85;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .sig-line { 
+            width: 100%;
+            border-top: 2px solid #1e293b; 
+            margin-bottom: 8px; 
+            margin-top: 60px;
+        }
+        .sig-name { font-weight: 700; font-size: 18px; color: #0f172a; }
+        .sig-title { font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            font-weight: 700;
+            color: rgba(241, 245, 249, 0.4);
+            z-index: -2;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <div class="watermark">CODEORBIT</div>
+        
+        <div class="header">
+            <img src="{{companyLogo}}" class="company-logo" alt="Company Logo">
+            <div class="partner-logos">
+                <img src="{{msmeLogo}}" class="partner-logo" alt="MSME Logo">
+                <img src="{{aicteLogo}}" class="partner-logo" alt="AICTE Logo">
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <div class="meta-info">
+                <p><strong>Ref:</strong> {{verificationId}}</p>
+                <p><strong>Date:</strong> {{date}}</p>
+            </div>
+            <div class="company-info">
+                <p><strong>CodeOrbit Solutions</strong></p>
+                <p>Whitehouse Vadgaon Bk Pune 41</p>
+                <p>codeorbit.internship@gmail.com | www.codeorbit.in</p>
+            </div>
+        </div>
+
+        <h2 class="doc-title">Internship Offer Letter</h2>
+
+        <div class="meta-info">
+            <p><strong>To,</strong></p>
+            <p><strong>{{name}}</strong></p>
+        </div>
+
+        <div class="content">
+            <p>Dear <strong>{{name}}</strong>,</p>
+
+            <p>We are pleased to offer you an internship position at <strong>CodeOrbit Solutions</strong> as a <strong>{{role}} Intern</strong>. We were impressed with your credentials and believe that your skills will be a great addition to our team.</p>
+
+            <p><strong>Terms of Internship:</strong></p>
+            <ul>
+                <li><strong>Duration:</strong> From {{startDate}} to {{endDate}}.</li>
+                <li><strong>Role:</strong> {{role}} Intern.</li>
+                <li><strong>Location:</strong> Remote/Office (As per discussion).</li>
+            </ul>
+
+            <p>During this internship, you will have the opportunity to work on real-world projects, receive mentorship from industry experts, and enhance your professional skills. We expect you to maintain a high level of professionalism and adhere to the company's policies and guidelines.</p>
+
+            <p>Your performance will be evaluated regularly, and upon successful completion of the internship, you will be provided with a Certificate of Completion and a Letter of Recommendation based on your contributions.</p>
+
+            <p>Please sign and return a copy of this letter to signify your acceptance of this offer.</p>
+
+            <p>We look forward to having you on board!</p>
+        </div>
+
+        <div class="footer">
+            <div class="qr-area">
+                <img src="{{qrCode}}" class="qr-image">
+                <div class="verify-text"><strong>Verify Authenticity</strong></div>
+                <div class="verify-text">verify.codeorbit.in</div>
+                <div class="verify-text">ID: {{verificationId}}</div>
+            </div>
+
+            <div class="signature-area">
+                <img src="{{companyStamp}}" class="company-stamp" alt="Company Stamp">
+                <div class="sig-line"></div>
+                <div class="sig-name">Tejas Date</div>
+                <div class="sig-title">Co-Founder</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
