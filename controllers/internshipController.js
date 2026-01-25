@@ -22,7 +22,7 @@ const calculateServerFee = (domain, duration) => {
   return program.basePrice * duration;
 };
 
-// @desc    Create Razorpay Order
+// @desc    Create Internship Application (Direct, Razorpay Removed)
 // @route   POST /api/internships/create-order
 // @access  Private
 const createInternshipOrder = asyncHandler(async (req, res) => {
@@ -35,102 +35,39 @@ const createInternshipOrder = asyncHandler(async (req, res) => {
     throw new Error("Invalid domain or duration");
   }
 
-  const options = {
-    amount: amount * 100, // amount in the smallest currency unit (paise)
-    currency: "INR",
-    receipt: `receipt_${Date.now()}`,
-    notes: {
-      userId: req.user._id.toString()
-    }
-  };
+  // Check if user already has a pending or active application for this domain
+  const existingApp = await InternshipApplication.findOne({
+    user: req.user._id,
+    preferredDomain,
+    status: { $in: ["New", "Reviewed", "Contacted", "Selected", "Approved"] }
+  });
 
-  try {
-    const order = await razorpay.orders.create(options);
-
-    if (!order) {
-      res.status(500);
-      throw new Error("Error creating Razorpay order");
-    }
-
-    // Create a pending application
-    if (formData) {
-      await InternshipApplication.create({
-        ...formData,
-        amount,
-        razorpayOrderId: order.id,
-        paymentStatus: "Pending",
-        user: req.user._id,
-      });
-    }
-
-    res.json(order);
-  } catch (error) {
-    console.error("Razorpay Order Error:", error);
-    
-    // If Razorpay fails (e.g. dummy keys), we still want to save the application
-    // so it shows in the admin panel for tracking.
-    if (formData) {
-      try {
-        const application = await InternshipApplication.create({
-          ...formData,
-          amount,
-          paymentStatus: "Failed",
-          user: req.user._id,
-        });
-        
-        // Return a response that indicates success in submission but failure in payment
-        return res.status(201).json({
-          message: "Application submitted, but payment gateway is down. Please contact support.",
-          application,
-          offline: true,
-          error: error.message
-        });
-      } catch (saveError) {
-        console.error("Failed to save application after Razorpay error:", saveError);
-      }
-    }
-
-    res.status(500);
-    throw new Error("Error creating Razorpay order: " + error.message);
+  if (existingApp) {
+    res.status(400);
+    throw new Error("You already have an active application for this domain.");
   }
+
+  const application = await InternshipApplication.create({
+    ...formData,
+    amount,
+    paymentStatus: "Verified", // Automatically verify for now since payment is removed
+    user: req.user._id,
+    status: "New"
+  });
+
+  res.status(201).json({
+    message: "Application submitted successfully",
+    application,
+    id: application._id // Mocking order id if frontend expects it
+  });
 });
 
-// @desc    Verify Payment and Create Application
+// @desc    Verify Payment (Mocked for backward compatibility)
 // @route   POST /api/internships/verify-payment
 // @access  Private
 const verifyInternshipPayment = asyncHandler(async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-  } = req.body;
-
-  const sign = razorpay_order_id + "|" + razorpay_payment_id;
-  const expectedSign = crypto
-    .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
-    .update(sign.toString())
-    .digest("hex");
-
-  if (razorpay_signature !== expectedSign) {
-    res.status(400);
-    throw new Error("Invalid payment signature");
-  }
-
-  const application = await InternshipApplication.findOne({ razorpayOrderId: razorpay_order_id });
-  
-  if (!application) {
-    res.status(404);
-    throw new Error("Application not found for this order");
-  }
-
-  if (application.paymentStatus !== "Verified") {
-    application.paymentStatus = "Verified";
-    application.razorpayPaymentId = razorpay_payment_id;
-    application.razorpaySignature = razorpay_signature;
-    await application.save();
-  }
-
-  res.status(200).json(application);
+  // Just return success as payment is removed
+  res.status(200).json({ message: "Payment system bypassed" });
 });
 
 // @desc    Razorpay Webhook
