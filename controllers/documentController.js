@@ -25,7 +25,7 @@ const generateDocuments = async (req, res) => {
     }
 
     const verificationId = `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/verify/${verificationId}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationId}`;
     
     // Generate QR Code
     const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl);
