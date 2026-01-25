@@ -39,12 +39,18 @@ const generateDocuments = async (req, res) => {
     const finalStartDate = reqStartDate || application.startDate;
     const finalEndDate = reqEndDate || application.endDate;
 
+    const formatDate = (date) => {
+      if (!date) return "TBD";
+      const d = new Date(date);
+      return isNaN(d.getTime()) ? "TBD" : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
     const docData = {
       name: application.name,
       role: application.preferredDomain,
-      startDate: finalStartDate ? new Date(finalStartDate).toLocaleDateString() : "TBD",
-      endDate: finalEndDate ? new Date(finalEndDate).toLocaleDateString() : "TBD",
-      date: new Date().toLocaleDateString(),
+      startDate: formatDate(finalStartDate),
+      endDate: formatDate(finalEndDate),
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
       verificationId,
       qrCode: qrCodeDataUrl,
       companyLogo,
@@ -53,27 +59,36 @@ const generateDocuments = async (req, res) => {
       companyStamp
     };
 
+    // Ensure upload directory exists
+    const uploadDir = path.join(__dirname, "../uploads/documents");
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
     // Update application with dates if provided
     if (reqStartDate) application.startDate = reqStartDate;
     if (reqEndDate) application.endDate = reqEndDate;
     await application.save();
 
     // Generate Offer Letter
+    console.log("Generating Offer Letter...");
     const offerLetterBuffer = await generatePDF("offerLetter", docData);
     const offerLetterFilename = `offer_letter_${applicationId}.pdf`;
-    const offerLetterPath = path.join(__dirname, "../uploads/documents", offerLetterFilename);
+    const offerLetterPath = path.join(uploadDir, offerLetterFilename);
     fs.writeFileSync(offerLetterPath, offerLetterBuffer);
 
     // Generate Certificate (Landscape)
+    console.log("Generating Certificate...");
     const certificateBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" } });
     const certificateFilename = `certificate_${applicationId}.pdf`;
-    const certificatePath = path.join(__dirname, "../uploads/documents", certificateFilename);
+    const certificatePath = path.join(uploadDir, certificateFilename);
     fs.writeFileSync(certificatePath, certificateBuffer);
 
     // Generate LOC
+    console.log("Generating LOC...");
     const locBuffer = await generatePDF("loc", docData);
     const locFilename = `loc_${applicationId}.pdf`;
-    const locPath = path.join(__dirname, "../uploads/documents", locFilename);
+    const locPath = path.join(uploadDir, locFilename);
     fs.writeFileSync(locPath, locBuffer);
 
     // Create or Update Document record

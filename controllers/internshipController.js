@@ -44,25 +44,55 @@ const createInternshipOrder = asyncHandler(async (req, res) => {
     }
   };
 
-  const order = await razorpay.orders.create(options);
+  try {
+    const order = await razorpay.orders.create(options);
 
-  if (!order) {
+    if (!order) {
+      res.status(500);
+      throw new Error("Error creating Razorpay order");
+    }
+
+    // Create a pending application
+    if (formData) {
+      await InternshipApplication.create({
+        ...formData,
+        amount,
+        razorpayOrderId: order.id,
+        paymentStatus: "Pending",
+        user: req.user._id,
+      });
+    }
+
+    res.json(order);
+  } catch (error) {
+    console.error("Razorpay Order Error:", error);
+    
+    // If Razorpay fails (e.g. dummy keys), we still want to save the application
+    // so it shows in the admin panel for tracking.
+    if (formData) {
+      try {
+        const application = await InternshipApplication.create({
+          ...formData,
+          amount,
+          paymentStatus: "Failed",
+          user: req.user._id,
+        });
+        
+        // Return a response that indicates success in submission but failure in payment
+        return res.status(201).json({
+          message: "Application submitted, but payment gateway is down. Please contact support.",
+          application,
+          offline: true,
+          error: error.message
+        });
+      } catch (saveError) {
+        console.error("Failed to save application after Razorpay error:", saveError);
+      }
+    }
+
     res.status(500);
-    throw new Error("Error creating Razorpay order");
+    throw new Error("Error creating Razorpay order: " + error.message);
   }
-
-  // Create a pending application
-  if (formData) {
-    await InternshipApplication.create({
-      ...formData,
-      amount,
-      razorpayOrderId: order.id,
-      paymentStatus: "Pending",
-      user: req.user._id,
-    });
-  }
-
-  res.json(order);
 });
 
 // @desc    Verify Payment and Create Application
@@ -165,30 +195,41 @@ const { createNotification } = require("./notificationController");
 // @route   PUT /api/internships/:id/status
 // @access  Private/Admin
 const updateInternshipStatus = asyncHandler(async (req, res) => {
-  const application = await InternshipApplication.findById(req.params.id);
+  try {
+    const application = await InternshipApplication.findById(req.params.id);
 
-  if (application) {
-    const oldStatus = application.status;
-    application.status = req.body.status || application.status;
-    application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
-    application.startDate = req.body.startDate || application.startDate;
-    application.endDate = req.body.endDate || application.endDate;
-    const updatedApplication = await application.save();
+    if (application) {
+      const oldStatus = application.status;
+      application.status = req.body.status || application.status;
+      application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
+      application.startDate = req.body.startDate || application.startDate;
+      application.endDate = req.body.endDate || application.endDate;
+      
+      const updatedApplication = await application.save();
 
-    // Create notification for user if linked
-    if (application.user && oldStatus !== application.status) {
-      await createNotification(
-        application.user,
-        "Application Status Updated",
-        `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
-        "application_status"
-      );
+      // Create notification for user if linked
+      if (application.user && oldStatus !== application.status) {
+        try {
+          await createNotification(
+            application.user,
+            "Application Status Updated",
+            `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
+            "application_status"
+          );
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+        }
+      }
+
+      res.json(updatedApplication);
+    } else {
+      res.status(404);
+      throw new Error("Application not found");
     }
-
-    res.json(updatedApplication);
-  } else {
-    res.status(404);
-    throw new Error("Application not found");
+  } catch (error) {
+    console.error("Update status error:", error);
+    res.status(res.statusCode === 200 ? 500 : res.statusCode);
+    throw error;
   }
 });
 

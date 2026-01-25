@@ -9,29 +9,48 @@ const generatePDF = async (templateName, data, options = {}) => {
   const template = handlebars.compile(htmlContent);
   const finalHtml = template(data);
 
-  const browser = await puppeteer.launch({
-    headless: "new",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-  });
-  const page = await browser.newPage();
-  await page.setContent(finalHtml, { waitUntil: "networkidle0" });
-  
-  const pdfOptions = {
-    format: "A4",
-    printBackground: true,
-    margin: {
-      top: "0mm",
-      right: "0mm",
-      bottom: "0mm",
-      left: "0mm",
-    },
-    ...options
-  };
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: "new",
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process", // <- this one helps in some cloud environments
+        "--disable-gpu"
+      ],
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+    });
+    
+    const page = await browser.newPage();
+    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
+    
+    const pdfOptions = {
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "0mm",
+        right: "0mm",
+        bottom: "0mm",
+        left: "0mm",
+      },
+      ...options
+    };
 
-  const pdfBuffer = await page.pdf(pdfOptions);
-
-  await browser.close();
-  return pdfBuffer;
+    const pdfBuffer = await page.pdf(pdfOptions);
+    return pdfBuffer;
+  } catch (error) {
+    console.error("Puppeteer error:", error);
+    throw new Error(`Failed to generate PDF: ${error.message}`);
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
 };
 
 module.exports = { generatePDF };
