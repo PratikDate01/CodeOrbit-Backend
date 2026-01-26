@@ -1,6 +1,7 @@
 const Document = require("../models/Document");
 const InternshipApplication = require("../models/InternshipApplication");
 const { generatePDF } = require("../utils/pdfGenerator");
+const asyncHandler = require("../middleware/asyncHandler");
 const QRCode = require("qrcode");
 const path = require("path");
 const fs = require("fs");
@@ -15,13 +16,14 @@ const getBase64Image = (filePath) => {
   return null;
 };
 
-const generateDocuments = async (req, res) => {
+const generateDocuments = asyncHandler(async (req, res) => {
   try {
     const { applicationId, startDate: reqStartDate, endDate: reqEndDate } = req.body;
     const application = await InternshipApplication.findById(applicationId).populate("user");
 
     if (!application) {
-      return res.status(404).json({ message: "Application not found" });
+      res.status(404);
+      throw new Error("Application not found");
     }
 
     const verificationId = `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
