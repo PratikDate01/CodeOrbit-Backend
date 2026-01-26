@@ -62,16 +62,30 @@ const generateDocuments = asyncHandler(async (req, res) => {
     };
 
     // Ensure upload directory exists
-    const uploadDir = path.join(__dirname, "../uploads/documents");
+    const uploadsBaseDir = path.join(__dirname, "../uploads");
+    const uploadDir = path.join(uploadsBaseDir, "documents");
+    
+    if (!fs.existsSync(uploadsBaseDir)) {
+      fs.mkdirSync(uploadsBaseDir, { recursive: true });
+    }
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
     // Update application with dates if provided
-    if (reqStartDate) application.startDate = reqStartDate;
-    if (reqEndDate) application.endDate = reqEndDate;
-    application.status = "Approved";
-    await application.save();
+    try {
+      if (reqStartDate) application.startDate = reqStartDate;
+      if (reqEndDate) application.endDate = reqEndDate;
+      application.status = "Approved";
+      await application.save();
+      console.log(`Application ${applicationId} status updated to Approved.`);
+    } catch (dbError) {
+      console.error("Database update failed:", dbError);
+      return res.status(500).json({ 
+        message: "Failed to update application status", 
+        error: dbError.message 
+      });
+    }
 
     // Start PDF generation
     try {
@@ -127,15 +141,28 @@ const generateDocuments = asyncHandler(async (req, res) => {
         offerLetterUrl: `/uploads/documents/${offerLetterFilename}`
       });
     } catch (genError) {
-      console.error("PDF generation failed:", genError);
+      console.error("PDF generation failed:", {
+        message: genError.message,
+        stack: genError.stack,
+        applicationId
+      });
+      
+      // If the application was already approved, we should inform the frontend
+      // that the status was updated but PDF generation failed.
       res.status(500).json({ 
-        message: "Failed to generate PDF documents", 
+        message: "Application approved but failed to generate PDF documents", 
+        type: "PDF_GENERATION_ERROR",
         error: genError.message 
       });
     }
   } catch (error) {
-    console.error("Document generation error:", error);
-    res.status(500).json({ message: "Error generating documents", error: error.message });
+    console.error("General Document generation error:", error);
+    const statusCode = error.name === 'ValidationError' ? 400 : 500;
+    res.status(statusCode).json({ 
+      message: "Error in document generation process", 
+      type: "GENERAL_ERROR",
+      error: error.message 
+    });
   }
 });
 

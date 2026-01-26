@@ -27,6 +27,7 @@ const generatePDF = async (templateName, data, options = {}) => {
         "--disable-gpu",
       ],
       headless: "new",
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
     });
     
     const page = await browser.newPage();
