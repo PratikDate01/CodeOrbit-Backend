@@ -2,12 +2,9 @@
 # exit on error
 set -o errexit
 
+# Install dependencies
 npm install
 
-# Install Chromium for Puppeteer
-npx puppeteer browsers install chrome
-
-# This is often needed on Render to ensure Puppeteer can find Chromium
-# and has all necessary system libraries.
-# Also, we might need to clear the cache if previous builds failed.
-# npm run build # if there was a build step
+# NOTE: We are using @sparticuz/chromium which provides its own chromium binary.
+# This avoids the need for 'npx puppeteer browsers install chrome' which
+# can be unreliable in some restricted environments like Render's free tier.

@@ -1,9 +1,10 @@
-const puppeteer = require("puppeteer");
+const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer-core");
 const handlebars = require("handlebars");
 const fs = require("fs");
 const path = require("path");
 
-// Cache for compiled templates to improve performance safely
+// Cache for compiled templates
 const templateCache = new Map();
 
 /**
@@ -27,46 +28,41 @@ const generatePDF = async (templateName, data, options = {}) => {
     const htmlContent = fs.readFileSync(templatePath, "utf-8");
     template = handlebars.compile(htmlContent);
     templateCache.set(templateName, template);
-    console.log(`[PDF] Template ${templateName} compiled and cached`);
   }
 
   const finalHtml = template(data);
   
-  // Defensive check: Ensure HTML is non-empty before launching browser
   if (!finalHtml || finalHtml.trim().length === 0) {
     throw new Error(`Generated HTML for ${templateName} is empty`);
   }
-  console.log(`[PDF] HTML content validated (length: ${finalHtml.length})`);
 
-  let browser;
-  let page;
-
+  let browser = null;
   try {
-    console.log(`[PDF] Launching browser for ${templateName}...`);
+    const isProduction = process.env.NODE_ENV === "production" || process.env.RENDER;
+    
+    console.log(`[PDF] Launching browser (isProduction: ${!!isProduction})...`);
+    
     browser = await puppeteer.launch({
-      args: [
+      args: isProduction ? chromium.args : [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process",
       ],
-      headless: "new",
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
-      timeout: 60000,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: isProduction 
+        ? await chromium.executablePath() 
+        : (process.env.PUPPETEER_EXECUTABLE_PATH || "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"),
+      headless: isProduction ? chromium.headless : true,
     });
 
-    page = await browser.newPage();
-    console.log("[PDF] Page created successfully");
+    const page = await browser.newPage();
+    console.log("[PDF] Page created");
 
-    // CRITICAL FIX: Ensure HTML finishes rendering before moving to PDF generation
-    // Use networkidle0 to wait for all resources (images/styles) to load
-    console.log("[PDF] Setting content and waiting for networkidle0...");
+    // Use networkidle0 to ensure all images and styles are loaded
     await page.setContent(finalHtml, { 
       waitUntil: "networkidle0",
-      timeout: 90000 
+      timeout: 60000 
     });
     
     const pdfOptions = {
@@ -81,32 +77,22 @@ const generatePDF = async (templateName, data, options = {}) => {
       ...options
     };
 
-    console.log("[PDF] Generating PDF buffer...");
-    // CRITICAL FIX: Explicitly await the PDF generation
+    console.log("[PDF] Generating PDF...");
     const pdfBuffer = await page.pdf(pdfOptions);
     
     if (!pdfBuffer || pdfBuffer.length === 0) {
         throw new Error("Generated PDF buffer is empty");
     }
 
-    console.log(`[PDF] Generation successful (${pdfBuffer.length} bytes)`);
+    console.log(`[PDF] Successfully generated (${pdfBuffer.length} bytes)`);
     return pdfBuffer;
   } catch (error) {
-    console.error("[PDF] Generation failed:", {
-      message: error.message,
-      stack: error.stack,
-      templateName
-    });
-    throw new Error(`Failed to generate PDF: ${error.message}`);
+    console.error("[PDF] CRITICAL FAILURE:", error);
+    throw new Error(`PDF Generation failed: ${error.message}`);
   } finally {
-    // SAFE CLEANUP: Close page and browser properly
-    if (page) {
-      console.log("[PDF] Closing page...");
-      await page.close().catch(err => console.error("[PDF] Error closing page:", err.message));
-    }
-    if (browser) {
+    if (browser !== null) {
       console.log("[PDF] Closing browser...");
-      await browser.close().catch(err => console.error("[PDF] Error closing browser:", err.message));
+      await browser.close();
     }
   }
 };
