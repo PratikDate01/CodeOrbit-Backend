@@ -21,6 +21,9 @@ const documentSchema = mongoose.Schema(
     locUrl: {
       type: String,
     },
+    paymentSlipUrl: {
+      type: String,
+    },
     verificationId: {
       type: String,
       unique: true,

@@ -173,7 +173,101 @@ const getDocumentByVerificationId = async (req, res) => {
   }
 };
 
+const amountToWords = (amount) => {
+  const ones = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+
+  const convert = (n) => {
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? " " + ones[n % 10] : "");
+    if (n < 1000) return ones[Math.floor(n / 100)] + " Hundred" + (n % 100 !== 0 ? " and " + convert(n % 100) : "");
+    if (n < 100000) return convert(Math.floor(n / 1000)) + " Thousand" + (n % 1000 !== 0 ? " " + convert(n % 1000) : "");
+    if (n < 10000000) return convert(Math.floor(n / 100000)) + " Lakh" + (n % 100000 !== 0 ? " " + convert(n % 100000) : "");
+    return "Amount too large";
+  };
+
+  if (amount === 0) return "Zero Only";
+  return convert(amount) + " Only";
+};
+
+const generatePaymentSlip = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+
+  if (application.paymentStatus !== "Verified") {
+    res.status(400);
+    throw new Error("Payment must be verified before generating slip");
+  }
+
+  const companyLogo = getBase64Image("assets/logos/Company Logo.png");
+  const aicteLogo = getBase64Image("assets/logos/AICTE LOGO.png");
+  const msmeLogo = getBase64Image("assets/logos/MSME LOGO.png");
+  const companyStamp = getBase64Image("assets/stamps/COMPANY STAMP.png");
+
+  const amount = application.amount || (application.duration === 1 ? 399 : application.duration === 3 ? 599 : 999);
+  
+  const docData = {
+    receiptNo: `REC-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 1000)}`,
+    name: application.name,
+    email: application.email,
+    phone: application.phone,
+    college: application.college,
+    role: application.preferredDomain,
+    duration: application.duration,
+    amount: amount,
+    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    transactionId: application.transactionId || 'N/A',
+    amountInWords: amountToWords(amount),
+    currentYear: new Date().getFullYear(),
+    companyLogo,
+    aicteLogo,
+    msmeLogo,
+    companyStamp
+  };
+
+  const uploadDir = path.join(__dirname, "../uploads/documents");
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+
+  try {
+    const buffer = await generatePDF("paymentSlip", docData);
+    const filename = `payment_slip_${applicationId}.pdf`;
+    const filePath = path.join(uploadDir, filename);
+    fs.writeFileSync(filePath, buffer);
+
+    let document = await Document.findOne({ applicationId });
+    if (document) {
+      document.paymentSlipUrl = `/uploads/documents/${filename}`;
+      await document.save();
+    } else {
+      const verificationId = `COS-P-${Date.now()}`;
+      await Document.create({
+        applicationId,
+        user: application.user ? application.user._id : req.user._id,
+        paymentSlipUrl: `/uploads/documents/${filename}`,
+        verificationId
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Payment slip generated successfully",
+      paymentSlipUrl: `/uploads/documents/${filename}`
+    });
+  } catch (error) {
+    res.status(500);
+    throw new Error(`Failed to generate payment slip: ${error.message}`);
+  }
+});
+
 module.exports = {
   generateDocuments,
   getDocumentByVerificationId,
+  generatePaymentSlip,
 };
