@@ -1,5 +1,6 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const asyncHandler = require("../middleware/asyncHandler");
+const mongoose = require("mongoose");
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -37,28 +38,27 @@ const applyForInternship = asyncHandler(async (req, res) => {
 // @route   GET /api/internships
 // @access  Private/Admin
 const getInternshipApplications = asyncHandler(async (req, res) => {
+  console.log("Fetching all internship applications...");
   const applications = await InternshipApplication.aggregate([
-    { $sort: { createdAt: -1 } },
+    {
+      $sort: { createdAt: -1 }
+    },
     {
       $lookup: {
         from: "documents",
         localField: "_id",
         foreignField: "applicationId",
-        as: "documentInfo"
+        as: "documents"
       }
     },
     {
       $addFields: {
-        documents: { $arrayElemAt: ["$documentInfo", 0] }
-      }
-    },
-    {
-      $project: {
-        documentInfo: 0
+        documents: { $arrayElemAt: ["$documents", 0] }
       }
     }
   ]);
-
+  
+  console.log(`Found ${applications.length} applications`);
   res.json(applications);
 });
 
@@ -120,8 +120,12 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 // @access  Private
 const getMyInternshipApplications = asyncHandler(async (req, res) => {
   const applications = await InternshipApplication.aggregate([
-    { $match: { user: req.user._id } },
-    { $sort: { createdAt: -1 } },
+    {
+      $match: { user: new mongoose.Types.ObjectId(req.user._id) }
+    },
+    {
+      $sort: { createdAt: -1 }
+    },
     {
       $lookup: {
         from: "documents",
@@ -131,9 +135,8 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
       }
     },
     {
-      $unwind: {
-        path: "$documents",
-        preserveNullAndEmptyArrays: true
+      $addFields: {
+        documents: { $arrayElemAt: ["$documents", 0] }
       }
     }
   ]);

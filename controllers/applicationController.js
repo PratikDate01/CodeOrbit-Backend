@@ -1,4 +1,5 @@
 const Application = require("../models/Application");
+const mongoose = require("mongoose");
 
 // @desc    Create new application
 // @route   POST /api/applications
@@ -26,7 +27,14 @@ const createApplication = async (req, res, next) => {
 // @access  Private (Client)
 const getMyApplications = async (req, res, next) => {
   try {
-    const applications = await Application.find({ user: req.user._id });
+    const applications = await Application.aggregate([
+      {
+        $match: { user: new mongoose.Types.ObjectId(req.user._id) }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]);
     res.json(applications);
   } catch (error) {
     next(error);
@@ -38,9 +46,12 @@ const getMyApplications = async (req, res, next) => {
 // @access  Private (Admin)
 const getApplications = async (req, res, next) => {
   try {
+    console.log("Fetching all applications...");
     const applications = await Application.find({}).populate("user", "name email");
+    console.log(`Found ${applications.length} applications`);
     res.json(applications);
   } catch (error) {
+    console.error("Error in getApplications:", error);
     next(error);
   }
 };

@@ -7,6 +7,7 @@ const Contact = require("../models/Contact");
 // @access  Private/Admin
 const getStats = async (req, res, next) => {
   try {
+    console.log("Fetching admin stats...");
     const totalApplications = await InternshipApplication.countDocuments();
     const totalMessages = await Contact.countDocuments();
     const totalUsers = await User.countDocuments({ role: "client" });
@@ -20,6 +21,13 @@ const getStats = async (req, res, next) => {
       .sort({ createdAt: -1 })
       .limit(5);
 
+    console.log("Stats fetched successfully:", {
+      totalApplications,
+      totalMessages,
+      totalUsers,
+      pendingReviews,
+    });
+
     res.json({
       totalApplications,
       totalMessages,
@@ -29,6 +37,7 @@ const getStats = async (req, res, next) => {
       recentApplications,
     });
   } catch (error) {
+    console.error("Error in getStats:", error);
     next(error);
   }
 };
