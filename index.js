@@ -51,8 +51,13 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Apply rate limiting to all requests
-app.use("/api", apiLimiter);
+// Apply rate limiting to all requests except admin/internship/document paths
+app.use("/api", (req, res, next) => {
+  if (req.path.startsWith("/internships") || req.path.startsWith("/documents") || req.path.startsWith("/admin")) {
+    return next();
+  }
+  return apiLimiter(req, res, next);
+});
 
 app.use("/api/contact", require("./routes/contactRoutes"));
 app.use("/api/internships", require("./routes/internshipRoutes"));
@@ -63,10 +68,17 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 
 // Static folder for uploaded documents
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
   res.send("Backend is running");
+});
+
+// 404 Handler for undefined routes
+app.use((req, res, next) => {
+  const error = new Error(`Not Found - ${req.originalUrl}`);
+  res.status(404);
+  next(error);
 });
 
 app.use(errorHandler);

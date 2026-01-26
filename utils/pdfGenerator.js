@@ -1,5 +1,4 @@
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
+const puppeteer = require("puppeteer");
 const handlebars = require("handlebars");
 const fs = require("fs");
 const path = require("path");
@@ -21,17 +20,22 @@ const generatePDF = async (templateName, data, options = {}) => {
   try {
     console.log("Launching Puppeteer...");
     browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
+      headless: "new",
     });
     
     const page = await browser.newPage();
     console.log("Setting page content...");
+    
+    // Set content and wait for images/fonts to load
     await page.setContent(finalHtml, { 
-      waitUntil: "networkidle0",
-      timeout: 30000 
+      waitUntil: ["networkidle0", "domcontentloaded"],
+      timeout: 60000 // Increase timeout to 60s for production
     });
     
     const pdfOptions = {
