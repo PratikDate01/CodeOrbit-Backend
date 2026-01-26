@@ -88,29 +88,4 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  
-  // Log all registered routes for verification
-  const routes = [];
-  app._router.stack.forEach((middleware) => {
-    if (middleware.route) {
-      routes.push({
-        path: middleware.route.path,
-        methods: Object.keys(middleware.route.methods).join(", ").toUpperCase(),
-      });
-    } else if (middleware.name === "router") {
-      middleware.handle.stack.forEach((handler) => {
-        if (handler.route) {
-          const path = middleware.regexp.toString()
-            .replace("/^\\", "")
-            .replace("\\/?(?=\\/|$)/i", "")
-            .replace(/\\\//g, "/") + handler.route.path;
-          routes.push({
-            path: path,
-            methods: Object.keys(handler.route.methods).join(", ").toUpperCase(),
-          });
-        }
-      });
-    }
-  });
-  console.table(routes);
 });
