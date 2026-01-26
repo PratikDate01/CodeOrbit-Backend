@@ -1,5 +1,4 @@
 const InternshipApplication = require("../models/InternshipApplication");
-const Document = require("../models/Document");
 const asyncHandler = require("../middleware/asyncHandler");
 
 // @desc    Apply for Internship
@@ -38,15 +37,25 @@ const applyForInternship = asyncHandler(async (req, res) => {
 // @route   GET /api/internships
 // @access  Private/Admin
 const getInternshipApplications = asyncHandler(async (req, res) => {
-  const applications = await InternshipApplication.find({}).sort("-createdAt").lean();
-  
-  // Attach documents to each application
-  const applicationsWithDocs = await Promise.all(applications.map(async (app) => {
-    const documents = await Document.findOne({ applicationId: app._id });
-    return { ...app, documents };
-  }));
+  const applications = await InternshipApplication.aggregate([
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: "documents",
+        localField: "_id",
+        foreignField: "applicationId",
+        as: "documents"
+      }
+    },
+    {
+      $unwind: {
+        path: "$documents",
+        preserveNullAndEmptyArrays: true
+      }
+    }
+  ]);
 
-  res.json(applicationsWithDocs);
+  res.json(applications);
 });
 
 const { createNotification } = require("./notificationController");
@@ -112,15 +121,26 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 // @route   GET /api/internships/my-applications
 // @access  Private
 const getMyInternshipApplications = asyncHandler(async (req, res) => {
-  const applications = await InternshipApplication.find({ user: req.user._id }).sort("-createdAt").lean();
-  
-  // Attach documents to each application
-  const applicationsWithDocs = await Promise.all(applications.map(async (app) => {
-    const documents = await Document.findOne({ applicationId: app._id });
-    return { ...app, documents };
-  }));
+  const applications = await InternshipApplication.aggregate([
+    { $match: { user: req.user._id } },
+    { $sort: { createdAt: -1 } },
+    {
+      $lookup: {
+        from: "documents",
+        localField: "_id",
+        foreignField: "applicationId",
+        as: "documents"
+      }
+    },
+    {
+      $unwind: {
+        path: "$documents",
+        preserveNullAndEmptyArrays: true
+      }
+    }
+  ]);
 
-  res.json(applicationsWithDocs);
+  res.json(applications);
 });
 
 module.exports = {

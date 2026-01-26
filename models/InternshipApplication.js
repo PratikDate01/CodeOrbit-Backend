@@ -36,6 +36,7 @@ const internshipApplicationSchema = mongoose.Schema(
     preferredDomain: {
       type: String,
       required: true,
+      index: true,
     },
     duration: {
       type: Number,
@@ -52,10 +53,12 @@ const internshipApplicationSchema = mongoose.Schema(
       type: String,
       enum: ["New", "Reviewed", "Contacted", "Selected", "Rejected", "Approved", "Completed"],
       default: "New",
+      index: true,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      index: true,
     },
   },
   {

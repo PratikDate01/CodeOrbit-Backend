@@ -3,6 +3,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
+const compression = require("compression");
 const path = require("path");
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
@@ -15,7 +16,23 @@ connectDB();
 const app = express();
 
 app.use(helmet());
+app.use(compression());
 app.use(morgan("dev"));
+
+// Keep-alive / Ping endpoint to prevent Render cold starts
+app.get("/api/ping", (req, res) => {
+  res.status(200).send("pong");
+});
+
+// Cache-Control middleware for static/semi-static APIs
+app.use((req, res, next) => {
+  if (req.method === "GET") {
+    if (req.url.startsWith("/api/internships") || req.url.startsWith("/api/documents")) {
+      res.set("Cache-Control", "public, max-age=3600"); // Cache for 1 hour
+    }
+  }
+  next();
+});
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://code-orbit-tech.vercel.app",

@@ -1,22 +1,20 @@
 import js from "@eslint/js";
 import globals from "globals";
+import { defineConfig } from "eslint/config";
 
-export default [
-  js.configs.recommended,
+export default defineConfig([
   {
-    files: ["**/*.{js,mjs,cjs}"],
+    files: ["**/*.{js,mjs,cjs,jsx}"],
+    plugins: { js },
+    extends: ["js/recommended"],
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "commonjs",
       globals: {
         ...globals.node,
-        ...globals.es2021,
       },
     },
     rules: {
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-      "no-undef": "error",
-      "no-redeclare": "off", // Disable to allow 'Document' and 'Notification' as model names
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     },
   },
-];
+  { files: ["**/*.js"], languageOptions: { sourceType: "script" } },
+]);

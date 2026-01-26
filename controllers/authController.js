@@ -203,7 +203,7 @@ const googleLogin = async (req, res, next) => {
       skills: user.skills,
       token: generateToken(user._id),
     });
-  } catch (_error) {
+  } catch {
     res.status(400);
     next(new Error("Google authentication failed"));
   }

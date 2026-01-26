@@ -6,6 +6,7 @@ const applicationSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
       ref: "User",
+      index: true,
     },
     internshipTitle: {
       type: String,
@@ -16,6 +17,7 @@ const applicationSchema = new mongoose.Schema(
       required: true,
       enum: ["pending", "reviewed", "accepted", "rejected"],
       default: "pending",
+      index: true,
     },
     resume: {
       type: String, // URL or file path
