@@ -64,35 +64,41 @@ const { createNotification } = require("./notificationController");
 // @route   PUT /api/internships/:id/status
 // @access  Private/Admin
 const updateInternshipStatus = asyncHandler(async (req, res) => {
-  const application = await InternshipApplication.findById(req.params.id);
+  try {
+    const application = await InternshipApplication.findById(req.params.id);
 
-  if (application) {
-    const oldStatus = application.status;
-    application.status = req.body.status || application.status;
-    application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
-    application.startDate = req.body.startDate || application.startDate;
-    application.endDate = req.body.endDate || application.endDate;
-    
-    const updatedApplication = await application.save();
+    if (application) {
+      const oldStatus = application.status;
+      application.status = req.body.status || application.status;
+      application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
+      application.startDate = req.body.startDate || application.startDate;
+      application.endDate = req.body.endDate || application.endDate;
+      
+      const updatedApplication = await application.save();
 
-    // Create notification for user if linked
-    if (application.user && oldStatus !== application.status) {
-      try {
-        await createNotification(
-          application.user,
-          "Application Status Updated",
-          `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
-          "application_status"
-        );
-      } catch (notifError) {
-        console.error("Notification error:", notifError);
+      // Create notification for user if linked
+      if (application.user && oldStatus !== application.status) {
+        try {
+          await createNotification(
+            application.user,
+            "Application Status Updated",
+            `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
+            "application_status"
+          );
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+        }
       }
-    }
 
-    res.json(updatedApplication);
-  } else {
-    res.status(404);
-    throw new Error("Application not found");
+      res.json(updatedApplication);
+    } else {
+      res.status(404);
+      throw new Error("Application not found");
+    }
+  } catch (error) {
+    console.error("Update status error:", error);
+    res.status(res.statusCode === 200 ? 500 : res.statusCode);
+    throw error;
   }
 });
 
