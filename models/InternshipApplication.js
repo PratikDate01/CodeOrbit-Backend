@@ -52,6 +52,12 @@ const internshipApplicationSchema = mongoose.Schema(
       enum: ["Pending", "Processing", "Verified", "Failed"],
       default: "Pending"
     },
+    transactionId: {
+      type: String,
+    },
+    paymentScreenshot: {
+      type: String,
+    },
     startDate: {
       type: Date,
     },

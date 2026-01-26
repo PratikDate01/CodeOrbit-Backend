@@ -59,6 +59,7 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
 
   if (application) {
     const oldStatus = application.status;
+    const oldPaymentStatus = application.paymentStatus;
     application.status = req.body.status || application.status;
     application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
     application.startDate = req.body.startDate || application.startDate;
@@ -67,16 +68,31 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
     const updatedApplication = await application.save();
 
     // Create notification for user if linked
-    if (application.user && oldStatus !== application.status) {
-      try {
-        await createNotification(
-          application.user,
-          "Application Status Updated",
-          `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
-          "application_status"
-        );
-      } catch (notifError) {
-        console.error("Notification error:", notifError);
+    if (application.user) {
+      if (oldStatus !== application.status) {
+        try {
+          await createNotification(
+            application.user,
+            "Application Status Updated",
+            `Your application for ${application.preferredDomain} has been updated to ${application.status}`,
+            "application_status"
+          );
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+        }
+      }
+
+      if (oldPaymentStatus !== application.paymentStatus) {
+        try {
+          await createNotification(
+            application.user,
+            "Payment Status Updated",
+            `Your payment status for ${application.preferredDomain} has been updated to ${application.paymentStatus}`,
+            "payment_status"
+          );
+        } catch (notifError) {
+          console.error("Notification error:", notifError);
+        }
       }
     }
 
@@ -118,10 +134,38 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
   res.json(appsWithDocs);
 });
 
+// @desc    Submit payment details
+// @route   POST /api/internships/:id/payment
+// @access  Private
+const submitPaymentDetails = asyncHandler(async (req, res) => {
+  const { transactionId } = req.body;
+  const application = await InternshipApplication.findById(req.params.id);
+
+  if (application) {
+    if (application.user.toString() !== req.user._id.toString()) {
+      res.status(401);
+      throw new Error("Not authorized");
+    }
+
+    application.transactionId = transactionId;
+    if (req.file) {
+      application.paymentScreenshot = `/uploads/payments/${req.file.filename}`;
+    }
+    application.paymentStatus = "Processing";
+    
+    const updatedApplication = await application.save();
+    res.json(updatedApplication);
+  } else {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+});
+
 module.exports = {
   applyForInternship,
   getInternshipApplications,
   updateInternshipStatus,
   deleteInternshipApplication,
   getMyInternshipApplications,
+  submitPaymentDetails,
 };

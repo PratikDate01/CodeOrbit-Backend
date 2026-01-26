@@ -56,6 +56,7 @@ app.use("/api", (req, res, next) => {
 
 // 5. Static Folders (Absolute Paths)
 app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
+app.use("/assets", express.static(path.resolve(__dirname, "assets")));
 
 // 6. Routes
 app.get("/api/ping", (req, res) => res.status(200).send("pong"));
