@@ -130,7 +130,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     console.error("Document generation error:", error);
     res.status(500).json({ message: "Error generating documents", error: error.message });
   }
-};
+});
 
 const getDocumentByVerificationId = async (req, res) => {
   try {
