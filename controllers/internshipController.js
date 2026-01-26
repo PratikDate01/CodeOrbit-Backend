@@ -44,13 +44,17 @@ const getInternshipApplications = asyncHandler(async (req, res) => {
         from: "documents",
         localField: "_id",
         foreignField: "applicationId",
-        as: "documents"
+        as: "documentInfo"
       }
     },
     {
-      $unwind: {
-        path: "$documents",
-        preserveNullAndEmptyArrays: true
+      $addFields: {
+        documents: { $arrayElemAt: ["$documentInfo", 0] }
+      }
+    },
+    {
+      $project: {
+        documentInfo: 0
       }
     }
   ]);
