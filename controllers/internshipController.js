@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 // @route   POST /api/internships/apply
 // @access  Private
 const applyForInternship = asyncHandler(async (req, res) => {
-  const { preferredDomain, duration, formData } = req.body;
+  const { preferredDomain, duration, amount, formData } = req.body;
 
   // Check if user already has a pending or active application for this domain
   const existingApp = await InternshipApplication.findOne({
@@ -24,6 +24,7 @@ const applyForInternship = asyncHandler(async (req, res) => {
     ...formData,
     preferredDomain,
     duration,
+    amount: amount || 0,
     user: req.user._id,
     status: "New"
   });
