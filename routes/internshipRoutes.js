@@ -14,7 +14,8 @@ router.get("/my-applications", protect, getMyInternshipApplications);
 
 // Admin routes
 router.get("/", protect, admin, getInternshipApplications);
-router.put("/:id/status", protect, admin, updateInternshipStatus);
+router.patch("/:id/status", protect, admin, updateInternshipStatus);
+router.put("/:id/status", protect, admin, updateInternshipStatus); // Keep PUT for compatibility
 router.delete("/:id", protect, admin, deleteInternshipApplication);
 
 module.exports = router;

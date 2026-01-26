@@ -73,59 +73,66 @@ const generateDocuments = asyncHandler(async (req, res) => {
     application.status = "Approved";
     await application.save();
 
-    // Start PDF generation in background
-    setTimeout(async () => {
-      try {
-        // Generate Offer Letter
-        console.log("Generating Offer Letter...");
-        const offerLetterBuffer = await generatePDF("offerLetter", docData);
-        const offerLetterFilename = `offer_letter_${applicationId}.pdf`;
-        const offerLetterPath = path.join(uploadDir, offerLetterFilename);
-        fs.writeFileSync(offerLetterPath, offerLetterBuffer);
+    // Start PDF generation
+    try {
+      // Generate Offer Letter
+      console.log("Generating Offer Letter...");
+      const offerLetterBuffer = await generatePDF("offerLetter", docData);
+      const offerLetterFilename = `offer_letter_${applicationId}.pdf`;
+      const offerLetterPath = path.join(uploadDir, offerLetterFilename);
+      fs.writeFileSync(offerLetterPath, offerLetterBuffer);
 
-        // Generate Certificate (Landscape)
-        console.log("Generating Certificate...");
-        const certificateBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" } });
-        const certificateFilename = `certificate_${applicationId}.pdf`;
-        const certificatePath = path.join(uploadDir, certificateFilename);
-        fs.writeFileSync(certificatePath, certificateBuffer);
+      // Generate Certificate (Landscape)
+      console.log("Generating Certificate...");
+      const certificateBuffer = await generatePDF("certificate", docData, { 
+        landscape: true, 
+        margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" } 
+      });
+      const certificateFilename = `certificate_${applicationId}.pdf`;
+      const certificatePath = path.join(uploadDir, certificateFilename);
+      fs.writeFileSync(certificatePath, certificateBuffer);
 
-        // Generate LOC
-        console.log("Generating LOC...");
-        const locBuffer = await generatePDF("loc", docData);
-        const locFilename = `loc_${applicationId}.pdf`;
-        const locPath = path.join(uploadDir, locFilename);
-        fs.writeFileSync(locPath, locBuffer);
+      // Generate LOC
+      console.log("Generating LOC...");
+      const locBuffer = await generatePDF("loc", docData);
+      const locFilename = `loc_${applicationId}.pdf`;
+      const locPath = path.join(uploadDir, locFilename);
+      fs.writeFileSync(locPath, locBuffer);
 
-        // Create or Update Document record
-        let document = await Document.findOne({ applicationId });
-        
-        if (document) {
-          document.offerLetterUrl = `/uploads/documents/${offerLetterFilename}`;
-          document.certificateUrl = `/uploads/documents/${certificateFilename}`;
-          document.locUrl = `/uploads/documents/${locFilename}`;
-          document.verificationId = verificationId;
-          await document.save();
-        } else {
-          await Document.create({
-            applicationId,
-            user: application.user ? application.user._id : req.user._id,
-            offerLetterUrl: `/uploads/documents/${offerLetterFilename}`,
-            certificateUrl: `/uploads/documents/${certificateFilename}`,
-            locUrl: `/uploads/documents/${locFilename}`,
-            verificationId,
-          });
-        }
-        console.log("Background PDF generation completed.");
-      } catch (bgError) {
-        console.error("Background PDF generation error:", bgError);
+      // Create or Update Document record
+      let document = await Document.findOne({ applicationId });
+      
+      if (document) {
+        document.offerLetterUrl = `/uploads/documents/${offerLetterFilename}`;
+        document.certificateUrl = `/uploads/documents/${certificateFilename}`;
+        document.locUrl = `/uploads/documents/${locFilename}`;
+        document.verificationId = verificationId;
+        await document.save();
+      } else {
+        await Document.create({
+          applicationId,
+          user: application.user ? application.user._id : req.user._id,
+          offerLetterUrl: `/uploads/documents/${offerLetterFilename}`,
+          certificateUrl: `/uploads/documents/${certificateFilename}`,
+          locUrl: `/uploads/documents/${locFilename}`,
+          verificationId,
+        });
       }
-    }, 0);
-
-    res.status(202).json({
-      message: "Document generation started in background",
-      verificationId
-    });
+      
+      console.log("PDF generation completed successfully.");
+      
+      res.status(201).json({
+        message: "Documents generated successfully",
+        verificationId,
+        offerLetterUrl: `/uploads/documents/${offerLetterFilename}`
+      });
+    } catch (genError) {
+      console.error("PDF generation failed:", genError);
+      res.status(500).json({ 
+        message: "Failed to generate PDF documents", 
+        error: genError.message 
+      });
+    }
   } catch (error) {
     console.error("Document generation error:", error);
     res.status(500).json({ message: "Error generating documents", error: error.message });

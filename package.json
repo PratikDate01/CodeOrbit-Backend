@@ -13,7 +13,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@sparticuz/chromium": "^143.0.4",
     "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "compression": "^1.8.1",
@@ -27,7 +26,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.4",
     "morgan": "^1.10.1",
-    "puppeteer-core": "^24.36.0",
+    "puppeteer": "^24.36.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
