@@ -27,14 +27,7 @@ const createApplication = async (req, res, next) => {
 // @access  Private (Client)
 const getMyApplications = async (req, res, next) => {
   try {
-    const applications = await Application.aggregate([
-      {
-        $match: { user: new mongoose.Types.ObjectId(req.user._id) }
-      },
-      {
-        $sort: { createdAt: -1 }
-      }
-    ]);
+    const applications = await Application.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(applications);
   } catch (error) {
     next(error);

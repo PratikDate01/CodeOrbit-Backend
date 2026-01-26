@@ -38,28 +38,15 @@ const applyForInternship = asyncHandler(async (req, res) => {
 // @route   GET /api/internships
 // @access  Private/Admin
 const getInternshipApplications = asyncHandler(async (req, res) => {
-  console.log("Fetching all internship applications...");
-  const applications = await InternshipApplication.aggregate([
-    {
-      $sort: { createdAt: -1 }
-    },
-    {
-      $lookup: {
-        from: "documents",
-        localField: "_id",
-        foreignField: "applicationId",
-        as: "documents"
-      }
-    },
-    {
-      $addFields: {
-        documents: { $arrayElemAt: ["$documents", 0] }
-      }
-    }
-  ]);
+  const applications = await InternshipApplication.find({}).sort({ createdAt: -1 });
   
-  console.log(`Found ${applications.length} applications`);
-  res.json(applications);
+  const documentModels = require("../models/Document");
+  const appsWithDocs = await Promise.all(applications.map(async (app) => {
+    const documents = await documentModels.findOne({ applicationId: app._id });
+    return { ...app.toObject(), documents };
+  }));
+
+  res.json(appsWithDocs);
 });
 
 const { createNotification } = require("./notificationController");
@@ -119,29 +106,16 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 // @route   GET /api/internships/my-applications
 // @access  Private
 const getMyInternshipApplications = asyncHandler(async (req, res) => {
-  const applications = await InternshipApplication.aggregate([
-    {
-      $match: { user: new mongoose.Types.ObjectId(req.user._id) }
-    },
-    {
-      $sort: { createdAt: -1 }
-    },
-    {
-      $lookup: {
-        from: "documents",
-        localField: "_id",
-        foreignField: "applicationId",
-        as: "documents"
-      }
-    },
-    {
-      $addFields: {
-        documents: { $arrayElemAt: ["$documents", 0] }
-      }
-    }
-  ]);
+  const applications = await InternshipApplication.find({ user: req.user._id })
+    .sort({ createdAt: -1 });
 
-  res.json(applications);
+  const documentModels = require("../models/Document");
+  const appsWithDocs = await Promise.all(applications.map(async (app) => {
+    const documents = await documentModels.findOne({ applicationId: app._id });
+    return { ...app.toObject(), documents };
+  }));
+
+  res.json(appsWithDocs);
 });
 
 module.exports = {
