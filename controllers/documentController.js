@@ -72,21 +72,6 @@ const generateDocuments = asyncHandler(async (req, res) => {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    // Update application with dates if provided
-    try {
-      if (reqStartDate) application.startDate = reqStartDate;
-      if (reqEndDate) application.endDate = reqEndDate;
-      application.status = "Approved";
-      await application.save();
-      console.log(`Application ${applicationId} status updated to Approved.`);
-    } catch (dbError) {
-      console.error("Database update failed:", dbError);
-      return res.status(500).json({ 
-        message: "Failed to update application status", 
-        error: dbError.message 
-      });
-    }
-
     // Start PDF generation
     try {
       // Generate Offer Letter
@@ -113,6 +98,13 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const locPath = path.join(uploadDir, locFilename);
       fs.writeFileSync(locPath, locBuffer);
 
+      // Update application status ONLY after successful PDF generation
+      if (reqStartDate) application.startDate = reqStartDate;
+      if (reqEndDate) application.endDate = reqEndDate;
+      application.status = "Approved";
+      await application.save();
+      console.log(`Application ${applicationId} status updated to Approved after PDF generation.`);
+
       // Create or Update Document record
       let document = await Document.findOne({ applicationId });
       
@@ -133,10 +125,11 @@ const generateDocuments = asyncHandler(async (req, res) => {
         });
       }
       
-      console.log("PDF generation completed successfully.");
+      console.log("PDF generation and database updates completed successfully.");
       
       res.status(201).json({
-        message: "Documents generated successfully",
+        success: true,
+        message: "Documents generated and application approved successfully",
         verificationId,
         offerLetterUrl: `/uploads/documents/${offerLetterFilename}`
       });
@@ -147,10 +140,9 @@ const generateDocuments = asyncHandler(async (req, res) => {
         applicationId
       });
       
-      // If the application was already approved, we should inform the frontend
-      // that the status was updated but PDF generation failed.
       res.status(500).json({ 
-        message: "Application approved but failed to generate PDF documents", 
+        success: false,
+        message: "Failed to generate PDF documents. Application status was not updated.", 
         type: "PDF_GENERATION_ERROR",
         error: genError.message 
       });

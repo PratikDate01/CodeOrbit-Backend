@@ -17,26 +17,44 @@ const generatePDF = async (templateName, data, options = {}) => {
   const finalHtml = template(data);
 
   let browser;
+  let retryCount = 0;
+  const maxRetries = 2;
+
+  while (retryCount <= maxRetries) {
+    try {
+      console.log(`Launching Puppeteer (Attempt ${retryCount + 1})...`);
+      browser = await puppeteer.launch({
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--no-first-run",
+          "--no-zygote",
+          "--single-process",
+        ],
+        headless: "new",
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+        timeout: 60000, // 60s timeout for launch
+      });
+      break; // Success
+    } catch (launchError) {
+      retryCount++;
+      console.error(`Puppeteer launch failed (Attempt ${retryCount}):`, launchError.message);
+      if (retryCount > maxRetries) throw new Error(`Failed to launch browser after ${maxRetries} retries: ${launchError.message}`);
+      // Wait a bit before retrying
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+  
   try {
-    console.log("Launching Puppeteer...");
-    browser = await puppeteer.launch({
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-      headless: "new",
-      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
-    });
-    
     const page = await browser.newPage();
     console.log("Setting page content...");
     
     // Set content and wait for images/fonts to load
     await page.setContent(finalHtml, { 
-      waitUntil: ["networkidle0", "domcontentloaded"],
-      timeout: 60000 // Increase timeout to 60s for production
+      waitUntil: ["networkidle0", "load", "domcontentloaded"],
+      timeout: 90000 // Increase timeout to 90s for production cold starts
     });
     
     const pdfOptions = {
