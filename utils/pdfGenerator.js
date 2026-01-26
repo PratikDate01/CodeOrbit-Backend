@@ -3,58 +3,70 @@ const handlebars = require("handlebars");
 const fs = require("fs");
 const path = require("path");
 
+// Cache for compiled templates to improve performance safely
+const templateCache = new Map();
+
+/**
+ * Generates a PDF buffer from a Handlebars template
+ * @param {string} templateName - Name of the template file (without .html)
+ * @param {object} data - Data to inject into the template
+ * @param {object} options - Puppeteer PDF options
+ * @returns {Promise<Buffer>}
+ */
 const generatePDF = async (templateName, data, options = {}) => {
-  console.log(`Starting PDF generation for template: ${templateName}`);
-  const templatePath = path.join(__dirname, "../templates", `${templateName}.html`);
+  console.log(`[PDF] Starting generation for template: ${templateName}`);
   
-  if (!fs.existsSync(templatePath)) {
-    console.error(`Template path does not exist: ${templatePath}`);
-    throw new Error(`Template not found: ${templateName}`);
+  let template = templateCache.get(templateName);
+  
+  if (!template) {
+    const templatePath = path.join(__dirname, "../templates", `${templateName}.html`);
+    if (!fs.existsSync(templatePath)) {
+      console.error(`[PDF] Template path does not exist: ${templatePath}`);
+      throw new Error(`Template not found: ${templateName}`);
+    }
+    const htmlContent = fs.readFileSync(templatePath, "utf-8");
+    template = handlebars.compile(htmlContent);
+    templateCache.set(templateName, template);
+    console.log(`[PDF] Template ${templateName} compiled and cached`);
   }
 
-  const htmlContent = fs.readFileSync(templatePath, "utf-8");
-  const template = handlebars.compile(htmlContent);
   const finalHtml = template(data);
+  
+  // Defensive check: Ensure HTML is non-empty before launching browser
+  if (!finalHtml || finalHtml.trim().length === 0) {
+    throw new Error(`Generated HTML for ${templateName} is empty`);
+  }
+  console.log(`[PDF] HTML content validated (length: ${finalHtml.length})`);
 
   let browser;
-  let retryCount = 0;
-  const maxRetries = 2;
+  let page;
 
-  while (retryCount <= maxRetries) {
-    try {
-      console.log(`Launching Puppeteer (Attempt ${retryCount + 1})...`);
-      browser = await puppeteer.launch({
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--no-first-run",
-          "--no-zygote",
-          "--single-process",
-        ],
-        headless: "new",
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
-        timeout: 60000, // 60s timeout for launch
-      });
-      break; // Success
-    } catch (launchError) {
-      retryCount++;
-      console.error(`Puppeteer launch failed (Attempt ${retryCount}):`, launchError.message);
-      if (retryCount > maxRetries) throw new Error(`Failed to launch browser after ${maxRetries} retries: ${launchError.message}`);
-      // Wait a bit before retrying
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  }
-  
   try {
-    const page = await browser.newPage();
-    console.log("Setting page content...");
-    
-    // Set content and wait for images/fonts to load
+    console.log(`[PDF] Launching browser for ${templateName}...`);
+    browser = await puppeteer.launch({
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--no-first-run",
+        "--no-zygote",
+        "--single-process",
+      ],
+      headless: "new",
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || null,
+      timeout: 60000,
+    });
+
+    page = await browser.newPage();
+    console.log("[PDF] Page created successfully");
+
+    // CRITICAL FIX: Ensure HTML finishes rendering before moving to PDF generation
+    // Use networkidle0 to wait for all resources (images/styles) to load
+    console.log("[PDF] Setting content and waiting for networkidle0...");
     await page.setContent(finalHtml, { 
-      waitUntil: ["networkidle0", "load", "domcontentloaded"],
-      timeout: 90000 // Increase timeout to 90s for production cold starts
+      waitUntil: "networkidle0",
+      timeout: 90000 
     });
     
     const pdfOptions = {
@@ -69,21 +81,32 @@ const generatePDF = async (templateName, data, options = {}) => {
       ...options
     };
 
-    console.log("Generating PDF buffer...");
+    console.log("[PDF] Generating PDF buffer...");
+    // CRITICAL FIX: Explicitly await the PDF generation
     const pdfBuffer = await page.pdf(pdfOptions);
-    console.log("PDF generation successful");
+    
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+        throw new Error("Generated PDF buffer is empty");
+    }
+
+    console.log(`[PDF] Generation successful (${pdfBuffer.length} bytes)`);
     return pdfBuffer;
   } catch (error) {
-    console.error("Puppeteer PDF generation error:", {
+    console.error("[PDF] Generation failed:", {
       message: error.message,
       stack: error.stack,
       templateName
     });
     throw new Error(`Failed to generate PDF: ${error.message}`);
   } finally {
+    // SAFE CLEANUP: Close page and browser properly
+    if (page) {
+      console.log("[PDF] Closing page...");
+      await page.close().catch(err => console.error("[PDF] Error closing page:", err.message));
+    }
     if (browser) {
-      console.log("Closing browser...");
-      await browser.close();
+      console.log("[PDF] Closing browser...");
+      await browser.close().catch(err => console.error("[PDF] Error closing browser:", err.message));
     }
   }
 };
