@@ -25,8 +25,11 @@ const generateDocuments = asyncHandler(async (req, res) => {
     const existingDoc = await Document.findOne({ applicationId });
     const hasCloudinaryDocs = existingDoc && 
       existingDoc.offerLetterUrl?.startsWith('http') && 
+      !existingDoc.offerLetterUrl?.includes('/raw/') &&
       existingDoc.certificateUrl?.startsWith('http') && 
-      existingDoc.locUrl?.startsWith('http');
+      !existingDoc.certificateUrl?.includes('/raw/') &&
+      existingDoc.locUrl?.startsWith('http') &&
+      !existingDoc.locUrl?.includes('/raw/');
 
     if (existingDoc && !regenerate && hasCloudinaryDocs) {
       return res.status(200).json({
@@ -91,7 +94,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const offerLetterUpload = await uploadBufferToCloudinary(
         offerLetterBuffer,
         "documents/offer_letters",
-        `offer_letter_${applicationId}`,
+        `offer_letter_${applicationId}.pdf`,
         "image"
       );
 
@@ -104,7 +107,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const certificateUpload = await uploadBufferToCloudinary(
         certificateBuffer,
         "documents/certificates",
-        `certificate_${applicationId}`,
+        `certificate_${applicationId}.pdf`,
         "image"
       );
 
@@ -116,7 +119,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const locUpload = await uploadBufferToCloudinary(
         locBuffer,
         "documents/locs",
-        `loc_${applicationId}`,
+        `loc_${applicationId}.pdf`,
         "image"
       );
 
@@ -211,7 +214,9 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
   // Check if payment slip already exists and is a valid Cloudinary URL
   const existingDoc = await Document.findOne({ applicationId });
-  const hasCloudinarySlip = existingDoc && existingDoc.paymentSlipUrl?.startsWith('http');
+  const hasCloudinarySlip = existingDoc && 
+    existingDoc.paymentSlipUrl?.startsWith('http') && 
+    !existingDoc.paymentSlipUrl?.includes('/raw/');
 
   if (existingDoc && !regenerate && hasCloudinarySlip) {
     return res.status(200).json({
@@ -268,7 +273,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     const uploadResult = await uploadBufferToCloudinary(
       buffer,
       "documents/payment_slips",
-      `payment_slip_${applicationId}`,
+      `payment_slip_${applicationId}.pdf`,
       "image"
     );
 
