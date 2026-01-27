@@ -21,9 +21,14 @@ const generateDocuments = asyncHandler(async (req, res) => {
   try {
     const { applicationId, startDate: reqStartDate, endDate: reqEndDate, regenerate = false } = req.body;
     
-    // Check if documents already exist
+    // Check if documents already exist and are valid Cloudinary URLs
     const existingDoc = await Document.findOne({ applicationId });
-    if (existingDoc && !regenerate && existingDoc.offerLetterUrl && existingDoc.certificateUrl && existingDoc.locUrl) {
+    const hasCloudinaryDocs = existingDoc && 
+      existingDoc.offerLetterUrl?.startsWith('http') && 
+      existingDoc.certificateUrl?.startsWith('http') && 
+      existingDoc.locUrl?.startsWith('http');
+
+    if (existingDoc && !regenerate && hasCloudinaryDocs) {
       return res.status(200).json({
         success: true,
         message: "Documents already exist",
@@ -204,9 +209,11 @@ const amountToWords = (amount) => {
 const generatePaymentSlip = asyncHandler(async (req, res) => {
   const { applicationId, regenerate = false } = req.body;
 
-  // Check if payment slip already exists
+  // Check if payment slip already exists and is a valid Cloudinary URL
   const existingDoc = await Document.findOne({ applicationId });
-  if (existingDoc && !regenerate && existingDoc.paymentSlipUrl) {
+  const hasCloudinarySlip = existingDoc && existingDoc.paymentSlipUrl?.startsWith('http');
+
+  if (existingDoc && !regenerate && hasCloudinarySlip) {
     return res.status(200).json({
       success: true,
       message: "Payment slip already exists",
