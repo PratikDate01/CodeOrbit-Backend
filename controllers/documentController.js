@@ -92,7 +92,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
         offerLetterBuffer,
         "documents/offer_letters",
         `offer_letter_${applicationId}`,
-        "raw"
+        "image"
       );
 
       // Generate and Upload Certificate (Landscape)
@@ -105,7 +105,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
         certificateBuffer,
         "documents/certificates",
         `certificate_${applicationId}`,
-        "raw"
+        "image"
       );
 
       // Generate and Upload LOC
@@ -117,7 +117,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
         locBuffer,
         "documents/locs",
         `loc_${applicationId}`,
-        "raw"
+        "image"
       );
 
       // Update application status
@@ -269,7 +269,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
       buffer,
       "documents/payment_slips",
       `payment_slip_${applicationId}`,
-      "raw"
+      "image"
     );
 
     let document = await Document.findOne({ applicationId });
