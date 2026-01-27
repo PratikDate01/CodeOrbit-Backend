@@ -58,6 +58,9 @@ const internshipApplicationSchema = mongoose.Schema(
     paymentScreenshot: {
       type: String,
     },
+    paymentScreenshotPublicId: {
+      type: String,
+    },
     startDate: {
       type: Date,
     },

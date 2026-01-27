@@ -7,180 +7,213 @@
             margin: 0; 
             padding: 0; 
             background-color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #1e293b;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #0f172a;
         }
         .certificate-container {
             width: 297mm;
             height: 210mm;
-            padding: 10mm;
+            padding: 12mm; /* Outer padding from page edge */
             position: relative;
             background: #fff;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
-        .outer-border {
-            width: 100%;
-            height: 100%;
-            border: 15px double #1e3a8a;
-            padding: 5px;
-            position: relative;
-            background: #fff;
-        }
-        .inner-border {
+        .border-frame {
             width: 100%;
             height: 100%;
             border: 2px solid #1e3a8a;
-            padding: 25px 60px;
+            position: relative;
+            padding: 5px; /* Spacing between double borders */
+        }
+        
+        .border-inner {
+            width: 100%;
+            height: 100%;
+            border: 1px solid #1e3a8a;
+            position: relative;
+            background: #fff;
+            /* CRITICAL: Internal safe margin for all content */
+            padding: 45px 60px; 
             display: flex;
             flex-direction: column;
             align-items: center;
             text-align: center;
-            position: relative;
         }
         
-        .header-logos {
+        /* Decorative Corners - Thinner and more elegant */
+        .corner {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 4px solid #1e3a8a;
+            z-index: 5;
+        }
+        .top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+        .top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+        .bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+        .header-section {
             width: 100%;
-            height: 130px;
-            position: relative;
-            margin-bottom: 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 30px;
         }
-        .company-logo { 
-            height: 150px;
-            object-fit: contain;
-        }
-        .partner-logo { 
-            height: 110px; 
-            object-fit: contain;
-        }
-        /* Position individual partner logos */
-        .header-logos img:first-child { left: 0; }
-        .header-logos img:last-child { right: 0; }
+        .partner-logo { height: 75px; width: auto; object-fit: contain; }
+        .company-logo { height: 100px; width: auto; object-fit: contain; }
         
-        .main-title {
-            font-family: Georgia, serif;
-            font-size: 64px;
+        .certificate-title {
+            font-family: 'Georgia', serif;
+            font-size: 58px;
             color: #1e3a8a;
             margin: 0;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            letter-spacing: 6px;
+            font-weight: 400;
         }
-        .sub-title {
-            font-size: 18px;
+        
+        .sub-header {
+            font-size: 16px;
             text-transform: uppercase;
             letter-spacing: 10px;
             color: #64748b;
-            margin-bottom: 20px;
+            margin: 10px 0 25px 0;
             font-weight: 600;
         }
         
-        .present-text { font-size: 22px; font-style: italic; color: #64748b; margin-bottom: 10px; }
+        .presentation-text { font-size: 20px; font-style: italic; color: #475569; }
         
-        .student-name {
-            font-family: Georgia, serif;
-            font-size: 56px;
+        .recipient-name {
+            font-family: 'Georgia', serif;
+            font-size: 48px;
             color: #0f172a;
-            margin: 10px 0 20px 0;
+            margin: 15px 0;
             border-bottom: 2px solid #e2e8f0;
+            padding: 0 50px 8px 50px;
             display: inline-block;
-            padding: 0 60px 5px 60px;
         }
         
-        .achievement-text {
+        .description {
             font-size: 18px;
             max-width: 850px;
             line-height: 1.6;
-            margin-bottom: 20px;
+            margin: 20px 0;
             color: #334155;
         }
-        .achievement-text strong { color: #1e3a8a; font-weight: 700; }
+        .description strong { color: #1e3a8a; font-weight: 700; }
         
-        .footer {
+        /* Fixed Footer Layout */
+        .certificate-footer {
             margin-top: auto;
             width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 0 20px 10px 20px;
+            padding-bottom: 10px; /* Safe distance from bottom border */
         }
         
-        .sig-box { text-align: center; width: 220px; position: relative; }
-        .sig-stamp {
+        .qr-container {
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .qr-img { 
+            width: 85px; 
+            height: 85px; 
+            border: 1px solid #f1f5f9; 
+            padding: 4px;
+            background: #fff;
+        }
+        .verification-info { font-size: 10px; color: #94a3b8; font-weight: 600; }
+        .verification-id { font-size: 11px; color: #475569; font-weight: 700; }
+        
+        .signature-container {
+            position: relative;
+            width: 240px;
+            text-align: center;
+        }
+        .official-stamp {
             position: absolute;
-            bottom: 20px;
+            bottom: 35px; /* Shifted up from baseline */
             left: 50%;
             transform: translateX(-50%);
-            height: 130px;
-            opacity: 0.85;
+            height: 120px;
+            opacity: 0.8;
             z-index: 1;
             pointer-events: none;
         }
-        .sig-line { border-top: 2px solid #1e293b; margin-bottom: 8px; margin-top: 60px; }
-        .sig-name { font-weight: 700; font-size: 18px; color: #0f172a; }
-        .sig-role { font-size: 13px; color: #475569; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
-        
-        .qr-section { text-align: left; }
-        .qr-code { width: 90px; height: 90px; margin-bottom: 5px; border: 1px solid #f1f5f9; padding: 5px; }
-        .verify-text { font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
-        .verify-id { font-size: 11px; color: #64748b; font-weight: 700; }
-        
-        /* Decorative Corners */
-        .corner {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            border: 6px solid #1e3a8a;
-            z-index: 10;
+        .signature-line {
+            border-top: 2px solid #1e293b;
+            margin-top: 60px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 2;
         }
-        .top-left { top: -15px; left: -15px; border-right: none; border-bottom: none; }
-        .top-right { top: -15px; right: -15px; border-left: none; border-bottom: none; }
-        .bottom-left { bottom: -15px; left: -15px; border-right: none; border-top: none; }
-        .bottom-right { bottom: -15px; right: -15px; border-left: none; border-top: none; }
+        .signer-name { font-weight: 700; font-size: 18px; color: #0f172a; }
+        .signer-role { font-size: 13px; color: #64748b; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600; }
+
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 120px;
+            font-weight: 900;
+            color: rgba(241, 245, 249, 0.3);
+            z-index: -1;
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+        }
     </style>
 </head>
 <body>
     <div class="certificate-container">
-        <div class="outer-border">
-            <div class="inner-border">
+        <div class="watermark">CODEORBIT</div>
+        <div class="border-frame">
+            <div class="border-inner">
                 <div class="corner top-left"></div>
                 <div class="corner top-right"></div>
                 <div class="corner bottom-left"></div>
                 <div class="corner bottom-right"></div>
                 
-                <div class="header-logos">
-                    <img src="{{msmeLogo}}" class="partner-logo" alt="MSME Logo">
-                    <img src="{{companyLogo}}" class="company-logo" alt="Company Logo">
-                    <img src="{{aicteLogo}}" class="partner-logo" alt="AICTE Logo">
+                <div class="header-section">
+                    <img src="{{msmeLogo}}" class="partner-logo" alt="MSME">
+                    <img src="{{companyLogo}}" class="company-logo" alt="CodeOrbit">
+                    <img src="{{aicteLogo}}" class="partner-logo" alt="AICTE">
                 </div>
                 
-                <h1 class="main-title">Certificate</h1>
-                <div class="sub-title">of Internship Completion</div>
+                <h1 class="certificate-title">Certificate</h1>
+                <div class="sub-header">of Internship Completion</div>
                 
-                <div class="present-text">This certificate is proudly presented to</div>
-                <div class="student-name">{{name}}</div>
+                <div class="presentation-text">This is to certify that</div>
+                <div class="recipient-name">{{name}}</div>
                 
-                <div class="achievement-text">
-                    For successfully completing a professional internship in <strong>{{role}}</strong> at <strong>CodeOrbit Solutions</strong>. 
-                    The internship tenure was from <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>. 
-                    During this program, the candidate demonstrated exceptional technical proficiency, 
-                    dedication, and contributed significantly to our organizational goals.
+                <div class="description">
+                    has successfully completed a professional internship in the domain of <strong>{{role}}</strong> 
+                    at <strong>CodeOrbit Solutions</strong>. The tenure of this internship was from 
+                    <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong>. During this period, 
+                    the candidate has shown exemplary performance and technical proficiency.
                 </div>
                 
-                <div class="footer">
-                    <div class="qr-section">
-                        <img src="{{qrCode}}" class="qr-code">
-                        <div class="verify-text">verify.codeorbit.in</div>
-                        <div class="verify-id">ID: {{verificationId}}</div>
+                <div class="certificate-footer">
+                    <div class="qr-container">
+                        <img src="{{qrCode}}" class="qr-img">
+                        <div class="verification-info">verify.codeorbit.in</div>
+                        <div class="verification-id">ID: {{verificationId}}</div>
                     </div>
                     
-                    <div class="sig-box">
-                        <img src="{{companyStamp}}" class="sig-stamp" alt="Company Stamp">
-                        <div class="sig-line"></div>
-                        <div class="sig-name">Tejas Date</div>
-                        <div class="sig-role">Co-Founder</div>
+                    <div class="signature-container">
+                        <img src="{{companyStamp}}" class="official-stamp" alt="Stamp">
+                        <div class="signature-line"></div>
+                        <div class="signer-name">Tejas Date</div>
+                        <div class="signer-role">Co-Founder</div>
                     </div>
                 </div>
             </div>

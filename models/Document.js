@@ -15,13 +15,25 @@ const documentSchema = mongoose.Schema(
     offerLetterUrl: {
       type: String,
     },
+    offerLetterPublicId: {
+      type: String,
+    },
     certificateUrl: {
+      type: String,
+    },
+    certificatePublicId: {
       type: String,
     },
     locUrl: {
       type: String,
     },
+    locPublicId: {
+      type: String,
+    },
     paymentSlipUrl: {
+      type: String,
+    },
+    paymentSlipPublicId: {
       type: String,
     },
     verificationId: {

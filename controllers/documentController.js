@@ -2,6 +2,7 @@ const Document = require("../models/Document");
 const InternshipApplication = require("../models/InternshipApplication");
 const { generatePDF } = require("../utils/pdfGenerator");
 const asyncHandler = require("../middleware/asyncHandler");
+const { uploadBufferToCloudinary } = require("../config/cloudinary");
 const QRCode = require("qrcode");
 const path = require("path");
 const fs = require("fs");
@@ -18,7 +19,21 @@ const getBase64Image = (filePath) => {
 
 const generateDocuments = asyncHandler(async (req, res) => {
   try {
-    const { applicationId, startDate: reqStartDate, endDate: reqEndDate } = req.body;
+    const { applicationId, startDate: reqStartDate, endDate: reqEndDate, regenerate = false } = req.body;
+    
+    // Check if documents already exist
+    const existingDoc = await Document.findOne({ applicationId });
+    if (existingDoc && !regenerate && existingDoc.offerLetterUrl && existingDoc.certificateUrl && existingDoc.locUrl) {
+      return res.status(200).json({
+        success: true,
+        message: "Documents already exist",
+        verificationId: existingDoc.verificationId,
+        offerLetterUrl: existingDoc.offerLetterUrl,
+        certificateUrl: existingDoc.certificateUrl,
+        locUrl: existingDoc.locUrl
+      });
+    }
+
     const application = await InternshipApplication.findById(applicationId).populate("user");
 
     if (!application) {
@@ -26,7 +41,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       throw new Error("Application not found");
     }
 
-    const verificationId = `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
     const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationId}`;
     
     // Generate QR Code
@@ -61,98 +76,94 @@ const generateDocuments = asyncHandler(async (req, res) => {
       companyStamp
     };
 
-    // Ensure upload directory exists
-    const uploadsBaseDir = path.join(__dirname, "../uploads");
-    const uploadDir = path.join(uploadsBaseDir, "documents");
-    
-    if (!fs.existsSync(uploadsBaseDir)) {
-      fs.mkdirSync(uploadsBaseDir, { recursive: true });
-    }
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    // Start PDF generation
+    // Start PDF generation and Cloudinary upload
     try {
-      // Generate Offer Letter
-      console.log("Generating Offer Letter...");
-      const offerLetterBuffer = await generatePDF("offerLetter", docData);
-      const offerLetterFilename = `offer_letter_${applicationId}.pdf`;
-      const offerLetterPath = path.join(uploadDir, offerLetterFilename);
-      fs.writeFileSync(offerLetterPath, offerLetterBuffer);
+      // Generate and Upload Offer Letter
+      console.log("Generating and Uploading Offer Letter...");
+      const offerLetterBuffer = await generatePDF("offerLetter", docData, {
+        margin: { top: "0", bottom: "0", left: "0", right: "0" }
+      });
+      const offerLetterUpload = await uploadBufferToCloudinary(
+        offerLetterBuffer,
+        "documents/offer_letters",
+        `offer_letter_${applicationId}`,
+        "raw"
+      );
 
-      // Generate Certificate (Landscape)
-      console.log("Generating Certificate...");
+      // Generate and Upload Certificate (Landscape)
+      console.log("Generating and Uploading Certificate...");
       const certificateBuffer = await generatePDF("certificate", docData, { 
         landscape: true, 
-        margin: { top: "10mm", bottom: "10mm", left: "10mm", right: "10mm" } 
+        margin: { top: "0", bottom: "0", left: "0", right: "0" } 
       });
-      const certificateFilename = `certificate_${applicationId}.pdf`;
-      const certificatePath = path.join(uploadDir, certificateFilename);
-      fs.writeFileSync(certificatePath, certificateBuffer);
+      const certificateUpload = await uploadBufferToCloudinary(
+        certificateBuffer,
+        "documents/certificates",
+        `certificate_${applicationId}`,
+        "raw"
+      );
 
-      // Generate LOC
-      console.log("Generating LOC...");
-      const locBuffer = await generatePDF("loc", docData);
-      const locFilename = `loc_${applicationId}.pdf`;
-      const locPath = path.join(uploadDir, locFilename);
-      fs.writeFileSync(locPath, locBuffer);
+      // Generate and Upload LOC
+      console.log("Generating and Uploading LOC...");
+      const locBuffer = await generatePDF("loc", docData, {
+        margin: { top: "0", bottom: "0", left: "0", right: "0" }
+      });
+      const locUpload = await uploadBufferToCloudinary(
+        locBuffer,
+        "documents/locs",
+        `loc_${applicationId}`,
+        "raw"
+      );
 
-      // Update application status ONLY after successful PDF generation
+      // Update application status
       if (reqStartDate) application.startDate = reqStartDate;
       if (reqEndDate) application.endDate = reqEndDate;
       application.status = "Approved";
       await application.save();
-      console.log(`Application ${applicationId} status updated to Approved after PDF generation.`);
 
       // Create or Update Document record
       let document = await Document.findOne({ applicationId });
       
+      const docUpdate = {
+        applicationId,
+        user: application.user ? application.user._id : req.user._id,
+        offerLetterUrl: offerLetterUpload.secure_url,
+        offerLetterPublicId: offerLetterUpload.public_id,
+        certificateUrl: certificateUpload.secure_url,
+        certificatePublicId: certificateUpload.public_id,
+        locUrl: locUpload.secure_url,
+        locPublicId: locUpload.public_id,
+        verificationId,
+      };
+
       if (document) {
-        document.offerLetterUrl = `/uploads/documents/${offerLetterFilename}`;
-        document.certificateUrl = `/uploads/documents/${certificateFilename}`;
-        document.locUrl = `/uploads/documents/${locFilename}`;
-        document.verificationId = verificationId;
+        Object.assign(document, docUpdate);
         await document.save();
       } else {
-        await Document.create({
-          applicationId,
-          user: application.user ? application.user._id : req.user._id,
-          offerLetterUrl: `/uploads/documents/${offerLetterFilename}`,
-          certificateUrl: `/uploads/documents/${certificateFilename}`,
-          locUrl: `/uploads/documents/${locFilename}`,
-          verificationId,
-        });
+        document = await Document.create(docUpdate);
       }
-      
-      console.log("PDF generation and database updates completed successfully.");
       
       res.status(201).json({
         success: true,
-        message: "Documents generated and application approved successfully",
+        message: "Documents generated and uploaded successfully",
         verificationId,
-        offerLetterUrl: `/uploads/documents/${offerLetterFilename}`
+        offerLetterUrl: document.offerLetterUrl,
+        certificateUrl: document.certificateUrl,
+        locUrl: document.locUrl
       });
     } catch (genError) {
-      console.error("PDF generation failed:", {
-        message: genError.message,
-        stack: genError.stack,
-        applicationId
-      });
-      
+      console.error("PDF generation or upload failed:", genError);
       res.status(500).json({ 
         success: false,
-        message: "Failed to generate PDF documents. Application status was not updated.", 
-        type: "PDF_GENERATION_ERROR",
+        message: "Failed to generate or upload documents", 
         error: genError.message 
       });
     }
   } catch (error) {
-    console.error("General Document generation error:", error);
-    const statusCode = error.name === 'ValidationError' ? 400 : 500;
-    res.status(statusCode).json({ 
-      message: "Error in document generation process", 
-      type: "GENERAL_ERROR",
+    console.error("General Document error:", error);
+    res.status(500).json({ 
+      success: false,
+      message: "Error in document process", 
       error: error.message 
     });
   }
@@ -191,7 +202,18 @@ const amountToWords = (amount) => {
 };
 
 const generatePaymentSlip = asyncHandler(async (req, res) => {
-  const { applicationId } = req.body;
+  const { applicationId, regenerate = false } = req.body;
+
+  // Check if payment slip already exists
+  const existingDoc = await Document.findOne({ applicationId });
+  if (existingDoc && !regenerate && existingDoc.paymentSlipUrl) {
+    return res.status(200).json({
+      success: true,
+      message: "Payment slip already exists",
+      paymentSlipUrl: existingDoc.paymentSlipUrl
+    });
+  }
+
   const application = await InternshipApplication.findById(applicationId).populate("user");
 
   if (!application) {
@@ -230,39 +252,47 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     companyStamp
   };
 
-  const uploadDir = path.join(__dirname, "../uploads/documents");
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-
   try {
-    const buffer = await generatePDF("paymentSlip", docData);
-    const filename = `payment_slip_${applicationId}.pdf`;
-    const filePath = path.join(uploadDir, filename);
-    fs.writeFileSync(filePath, buffer);
+    console.log("Generating and Uploading Payment Slip...");
+    const buffer = await generatePDF("paymentSlip", docData, {
+      margin: { top: "0", bottom: "0", left: "0", right: "0" }
+    });
+    
+    const uploadResult = await uploadBufferToCloudinary(
+      buffer,
+      "documents/payment_slips",
+      `payment_slip_${applicationId}`,
+      "raw"
+    );
 
     let document = await Document.findOne({ applicationId });
     if (document) {
-      document.paymentSlipUrl = `/uploads/documents/${filename}`;
+      document.paymentSlipUrl = uploadResult.secure_url;
+      document.paymentSlipPublicId = uploadResult.public_id;
       await document.save();
     } else {
       const verificationId = `COS-P-${Date.now()}`;
-      await Document.create({
+      document = await Document.create({
         applicationId,
         user: application.user ? application.user._id : req.user._id,
-        paymentSlipUrl: `/uploads/documents/${filename}`,
+        paymentSlipUrl: uploadResult.secure_url,
+        paymentSlipPublicId: uploadResult.public_id,
         verificationId
       });
     }
 
     res.status(201).json({
       success: true,
-      message: "Payment slip generated successfully",
-      paymentSlipUrl: `/uploads/documents/${filename}`
+      message: "Payment slip generated and uploaded successfully",
+      paymentSlipUrl: document.paymentSlipUrl
     });
   } catch (error) {
-    res.status(500);
-    throw new Error(`Failed to generate payment slip: ${error.message}`);
+    console.error("Payment slip generation or upload failed:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate or upload payment slip",
+      error: error.message
+    });
   }
 });
 

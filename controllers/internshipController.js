@@ -1,6 +1,7 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const asyncHandler = require("../middleware/asyncHandler");
 const mongoose = require("mongoose");
+const { uploadBufferToCloudinary } = require("../config/cloudinary");
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -150,7 +151,19 @@ const submitPaymentDetails = asyncHandler(async (req, res) => {
 
     application.transactionId = transactionId;
     if (req.file) {
-      application.paymentScreenshot = `/uploads/payments/${req.file.filename}`;
+      try {
+        const uploadResult = await uploadBufferToCloudinary(
+          req.file.buffer,
+          "payments/screenshots",
+          `payment_${application._id}_${Date.now()}`
+        );
+        application.paymentScreenshot = uploadResult.secure_url;
+        application.paymentScreenshotPublicId = uploadResult.public_id;
+      } catch (uploadError) {
+        console.error("Cloudinary upload failed:", uploadError);
+        res.status(500);
+        throw new Error("Failed to upload payment screenshot");
+      }
     }
     application.paymentStatus = "Processing";
     
