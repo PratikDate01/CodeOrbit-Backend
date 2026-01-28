@@ -19,18 +19,31 @@ connectDB();
 
 const app = express();
 
-// 1. Security & Optimization Middleware
+// 1. Core Parsers (MUST come before sanitization)
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+
+// 2. Security & Optimization Middleware
 app.use(helmet({
-  crossOriginResourcePolicy: false, // Allow serving static images
+  crossOriginResourcePolicy: false,
 }));
-app.use(express.json({ limit: "10kb" })); // Body limit to prevent DDoS
-app.use(mongoSanitize()); // Data sanitization against NoSQL injection
-app.use(xss()); // Data sanitization against XSS
-app.use(hpp()); // Prevent HTTP parameter pollution
+app.use(mongoSanitize()); // Now parses the already-parsed body
+app.use(xss()); 
+app.use(hpp({
+  whitelist: [
+    "status",
+    "role",
+    "page",
+    "limit",
+    "sort",
+    "preferredDomain",
+    "paymentStatus"
+  ]
+}));
 app.use(compression());
 app.use(morgan("dev"));
 
-// 2. CORS Configuration
+// 3. CORS Configuration
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://code-orbit-tech.vercel.app",
@@ -49,9 +62,9 @@ app.use(cors({
   credentials: true
 }));
 
-// 3. Body Parsers
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// 3. Static Folders
+app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
+app.use("/assets", express.static(path.resolve(__dirname, "assets")));
 
 // 4. Rate Limiting (Exclude Admin/Critical Routes)
 app.use("/api", (req, res, next) => {
@@ -61,11 +74,7 @@ app.use("/api", (req, res, next) => {
   return apiLimiter(req, res, next);
 });
 
-// 5. Static Folders (Absolute Paths)
-app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
-app.use("/assets", express.static(path.resolve(__dirname, "assets")));
-
-// 6. Routes
+// 5. Routes
 app.get("/api/ping", (req, res) => res.status(200).send("pong"));
 
 // Apply stricter rate limiting to auth and payments

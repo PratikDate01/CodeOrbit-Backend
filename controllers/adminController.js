@@ -47,7 +47,18 @@ const getStats = async (req, res, next) => {
 // @access  Private/Admin
 const getUsers = async (req, res, next) => {
   try {
-    const users = await User.find({}).select("-password");
+    const { role, page = 1, limit = 100 } = req.query;
+    const query = {};
+    
+    // Whitelist query parameters to prevent injection
+    if (role) query.role = String(role);
+
+    const users = await User.find(query)
+      .select("-password")
+      .limit(Number(limit))
+      .skip((Number(page) - 1) * Number(limit))
+      .sort({ createdAt: -1 });
+
     res.json(users);
   } catch (error) {
     next(error);

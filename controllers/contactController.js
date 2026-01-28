@@ -31,7 +31,16 @@ const submitContact = asyncHandler(async (req, res) => {
 // @route   GET /api/contact
 // @access  Private/Admin
 const getContactMessages = asyncHandler(async (req, res) => {
-  const messages = await Contact.find({}).sort("-createdAt");
+  const { page = 1, limit = 100, status } = req.query;
+  const query = {};
+  
+  if (status) query.status = String(status);
+
+  const messages = await Contact.find(query)
+    .sort("-createdAt")
+    .limit(Number(limit))
+    .skip((Number(page) - 1) * Number(limit));
+    
   res.json(messages);
 });
 

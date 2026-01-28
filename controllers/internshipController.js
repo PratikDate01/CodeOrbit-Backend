@@ -1,5 +1,7 @@
 const InternshipApplication = require("../models/InternshipApplication");
+const Document = require("../models/Document");
 const asyncHandler = require("../middleware/asyncHandler");
+const { createNotification } = require("./notificationController");
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -38,18 +40,36 @@ const applyForInternship = asyncHandler(async (req, res) => {
 // @route   GET /api/internships
 // @access  Private/Admin
 const getInternshipApplications = asyncHandler(async (req, res) => {
-  const applications = await InternshipApplication.find({}).sort({ createdAt: -1 });
+  const { status, preferredDomain, paymentStatus, page = 1, limit = 100 } = req.query;
+  const query = {};
+
+  // Whitelist query parameters
+  if (status) query.status = String(status);
+  if (preferredDomain) query.preferredDomain = String(preferredDomain);
+  if (paymentStatus) query.paymentStatus = String(paymentStatus);
+
+  const applications = await InternshipApplication.find(query)
+    .sort({ createdAt: -1 })
+    .limit(Number(limit))
+    .skip((Number(page) - 1) * Number(limit))
+    .lean();
   
-  const documentModels = require("../models/Document");
-  const appsWithDocs = await Promise.all(applications.map(async (app) => {
-    const documents = await documentModels.findOne({ applicationId: app._id });
-    return { ...app.toObject(), documents };
-  }));
+  if (!applications || applications.length === 0) {
+    return res.json([]);
+  }
+
+  const applicationIds = applications.map(app => app._id);
+  const allDocuments = await Document.find({ applicationId: { $in: applicationIds } }).lean();
+  
+  const appsWithDocs = applications.map(app => {
+    const documents = allDocuments.find(doc => 
+      doc.applicationId && doc.applicationId.toString() === app._id.toString()
+    );
+    return { ...app, documents };
+  });
 
   res.json(appsWithDocs);
 });
-
-const { createNotification } = require("./notificationController");
 
 // @desc    Update internship application status
 // @route   PUT /api/internships/:id/status
@@ -123,13 +143,22 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 // @access  Private
 const getMyInternshipApplications = asyncHandler(async (req, res) => {
   const applications = await InternshipApplication.find({ user: req.user._id })
-    .sort({ createdAt: -1 });
+    .sort({ createdAt: -1 })
+    .lean();
 
-  const documentModels = require("../models/Document");
-  const appsWithDocs = await Promise.all(applications.map(async (app) => {
-    const documents = await documentModels.findOne({ applicationId: app._id });
-    return { ...app.toObject(), documents };
-  }));
+  if (!applications || applications.length === 0) {
+    return res.json([]);
+  }
+
+  const applicationIds = applications.map(app => app._id);
+  const allDocuments = await Document.find({ applicationId: { $in: applicationIds } }).lean();
+
+  const appsWithDocs = applications.map(app => {
+    const documents = allDocuments.find(doc => 
+      doc.applicationId && doc.applicationId.toString() === app._id.toString()
+    );
+    return { ...app, documents };
+  });
 
   res.json(appsWithDocs);
 });
