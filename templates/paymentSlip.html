@@ -2,348 +2,371 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Receipt - CodeOrbit</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&family=Libre+Baskerville:wght@700&display=swap');
 
-        body {
-            font-family: 'Montserrat', sans-serif;
+        :root {
+            --navy: #1e3a8a;
+            --slate: #475569;
+            --gold: #b45309;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            line-height: 1.6; 
+            color: #1e293b; 
             margin: 0;
             padding: 0;
-            color: #1e293b;
-            line-height: 1.5;
-            background: #f8fafc;
+            background: #fff;
         }
-        .container {
+
+        .page {
+            padding: 20mm;
             width: 210mm;
             min-height: 297mm;
             margin: 0 auto;
-            padding: 15mm;
+            position: relative;
             background: #fff;
-            position: relative;
+            overflow: hidden;
         }
-        .outer-border {
-            border: 1px solid #e2e8f0;
-            height: 100%;
-            position: relative;
-            padding: 10px;
-        }
-        .inner-border {
-            border: 4px solid #1e3a8a;
-            height: 100%;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-        }
+
+        /* Watermark */
         .watermark {
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-45deg);
-            font-size: 100px;
-            font-weight: 800;
-            color: rgba(226, 232, 240, 0.2);
-            z-index: 0;
+            transform: translate(-50%, -50%) rotate(-35deg);
+            font-size: 130px;
+            font-weight: 900;
+            color: rgba(30, 58, 138, 0.02);
+            z-index: -1;
             white-space: nowrap;
             pointer-events: none;
         }
-        .header {
+
+        /* Top Header */
+        .header-logos {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 40px;
-            border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 20px;
-            position: relative;
-            z-index: 1;
+            align-items: center;
+            margin-bottom: 5px;
         }
-        .logo {
-            height: 70px;
+
+        .logo-img { height: 60px; width: auto; object-fit: contain; }
+        .msme-logo { height: 45px; }
+
+        .divider {
+            border-top: 2px solid var(--navy);
+            margin: 8px 0;
+        }
+
+        .company-info {
+            text-align: center;
+            font-size: 12px;
+            color: var(--slate);
             margin-bottom: 10px;
         }
-        .receipt-title-box {
-            text-align: right;
+
+        .company-info strong { color: var(--navy); font-size: 14px; }
+
+        /* Receipt Title Section */
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 30px 0;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border);
         }
+
         .receipt-title {
-            font-size: 36px;
-            font-weight: 800;
-            color: #1e3a8a;
+            font-family: 'Libre Baskerville', serif;
+            font-size: 32px;
+            color: var(--navy);
             margin: 0;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
-        .receipt-no {
-            font-size: 14px;
-            color: #64748b;
-            font-weight: 600;
-            margin-top: 5px;
+
+        .receipt-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--slate);
         }
+
+        .receipt-meta b { color: var(--navy); }
+
         .status-badge {
             display: inline-block;
-            margin-top: 10px;
-            padding: 5px 15px;
+            padding: 4px 12px;
             background: #dcfce7;
             color: #166534;
-            font-weight: 800;
+            font-weight: 700;
             border-radius: 4px;
-            border: 1px solid #bbf7d0;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
+            margin-top: 5px;
         }
+
+        /* Details Grid */
         .details-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            margin-bottom: 40px;
-            position: relative;
-            z-index: 1;
+            gap: 30px;
+            margin-bottom: 35px;
         }
-        .section-title {
-            font-size: 11px;
-            text-transform: uppercase;
-            color: #b45309;
-            letter-spacing: 2px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            display: block;
-        }
-        .info-card {
+
+        .info-section {
             background: #f8fafc;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #f1f5f9;
+            padding: 18px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
         }
+
+        .section-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
         .info-row {
-            margin-bottom: 8px;
             display: flex;
+            margin-bottom: 6px;
             font-size: 13px;
         }
-        .info-label {
-            font-weight: 600;
-            width: 100px;
-            color: #64748b;
-        }
-        .info-value {
-            color: #1e293b;
-            font-weight: 500;
-            flex: 1;
-        }
+
+        .info-key { width: 100px; color: var(--slate); font-weight: 500; }
+        .info-val { flex: 1; color: var(--navy); font-weight: 600; }
+
+        /* Table */
         .table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 1;
+            margin-bottom: 25px;
         }
+
         .table th {
-            background: #1e3a8a;
-            color: white;
+            background: var(--navy);
+            color: #fff;
             text-align: left;
-            padding: 15px;
+            padding: 12px 15px;
             font-size: 12px;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+
         .table td {
             padding: 15px;
-            border-bottom: 1px solid #f1f5f9;
+            border-bottom: 1px solid var(--border);
             font-size: 14px;
         }
-        .amount-summary {
-            margin-left: auto;
-            width: 300px;
-            position: relative;
-            z-index: 1;
+
+        .desc-title { font-weight: 700; color: var(--navy); }
+        .desc-sub { font-size: 12px; color: var(--slate); margin-top: 3px; }
+
+        /* Summary */
+        .summary-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 40px;
         }
+
+        .summary-box { width: 280px; }
+
         .summary-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
+            padding: 8px 0;
             font-size: 14px;
         }
-        .summary-row.total {
-            border-top: 2px solid #1e3a8a;
+
+        .summary-total {
+            border-top: 2px solid var(--navy);
             margin-top: 10px;
-            padding-top: 15px;
+            padding-top: 12px;
             font-size: 18px;
             font-weight: 800;
-            color: #1e3a8a;
+            color: var(--navy);
         }
+
         .amount-words {
-            margin-top: 20px;
             font-size: 12px;
-            color: #64748b;
+            color: var(--slate);
             font-style: italic;
+            border-left: 3px solid var(--gold);
+            padding-left: 15px;
+            margin-bottom: 40px;
         }
-        .bottom-section {
+
+        /* Footer */
+        .footer {
+            margin-top: auto;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: auto;
-            padding-top: 50px;
-            position: relative;
-            z-index: 1;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
         }
+
         .note-box {
+            max-width: 400px;
             font-size: 10px;
-            color: #94a3b8;
-            max-width: 350px;
+            color: var(--slate);
+            line-height: 1.4;
         }
-        .signature-box {
+
+        .signature-section {
             text-align: center;
+            width: 180px;
             position: relative;
         }
+
         .stamp {
             position: absolute;
             bottom: 40px;
             left: 50%;
             transform: translateX(-50%);
-            height: 100px;
-            opacity: 0.8;
-            z-index: 1;
+            height: 90px;
+            opacity: 0.7;
+            pointer-events: none;
         }
+
         .sig-line {
-            border-top: 1.5px solid #1e293b;
-            width: 200px;
-            margin-top: 50px;
-            padding-top: 8px;
+            border-top: 1.5px solid #000;
+            padding-top: 5px;
             font-weight: 700;
-            font-size: 12px;
-            color: #1e293b;
-            position: relative;
-            z-index: 2;
+            font-size: 13px;
+            color: var(--navy);
         }
-        .footer {
-            margin-top: 40px;
-            text-align: center;
-            border-top: 1px solid #f1f5f9;
-            padding-top: 20px;
+
+        .sig-title {
             font-size: 10px;
-            color: #94a3b8;
-        }
-        .partner-badges {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-        }
-        .badge {
-            height: 40px;
-            filter: grayscale(100%);
-            opacity: 0.5;
+            color: var(--slate);
+            font-weight: 700;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="page">
         <div class="watermark">CODEORBIT</div>
-        <div class="outer-border">
-            <div class="inner-border">
-                <div class="header">
-                    <div class="brand-section">
-                        <img src="{{companyLogo}}" alt="CodeOrbit" class="logo">
-                        <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
-                            Empowering Future Tech Leaders
-                        </div>
-                    </div>
-                    <div class="receipt-title-box">
-                        <h2 class="receipt-title">RECEIPT</h2>
-                        <div class="receipt-no">NO: {{receiptNo}}</div>
-                        <div class="status-badge">Payment Verified</div>
-                    </div>
-                </div>
 
-                <div class="details-grid">
-                    <div>
-                        <span class="section-title">Received From</span>
-                        <div class="info-card">
-                            <div style="font-size: 16px; font-weight: 700; color: #1e3a8a; margin-bottom: 5px;">{{name}}</div>
-                            <div style="font-size: 13px; color: #64748b;">{{email}}</div>
-                            <div style="font-size: 13px; color: #64748b;">{{phone}}</div>
-                            <div style="font-size: 12px; color: #94a3b8; margin-top: 5px;">{{college}}</div>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="section-title">Payment Information</span>
-                        <div class="info-card">
-                            <div class="info-row">
-                                <span class="info-label">Date:</span>
-                                <span class="info-value">{{date}}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Transaction:</span>
-                                <span class="info-value" style="font-family: monospace;">{{transactionId}}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="info-label">Status:</span>
-                                <span class="info-value" style="color: #166534;">Successful</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <div class="header-logos">
+            <img src="{{companyLogo}}" class="logo-img" alt="CodeOrbit">
+            <img src="{{msmeLogo}}" class="logo-img msme-logo" alt="MSME">
+            <img src="{{aicteLogo}}" class="logo-img" alt="AICTE">
+        </div>
 
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th style="width: 70%;">Description of Service</th>
-                            <th style="width: 30%; text-align: right;">Amount (INR)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <div style="font-weight: 600; color: #1e293b;">Internship Program Enrollment</div>
-                                <div style="font-size: 11px; color: #64748b; margin-top: 4px;">
-                                    Domain: {{role}} | Duration: {{duration}} Month(s)
-                                </div>
-                            </td>
-                            <td style="text-align: right; font-weight: 600;">₹{{amount}}.00</td>
-                        </tr>
-                    </tbody>
-                </table>
+        <div class="divider"></div>
 
-                <div class="amount-summary">
-                    <div class="summary-row">
-                        <span>Subtotal</span>
-                        <span>₹{{amount}}.00</span>
-                    </div>
-                    <div class="summary-row">
-                        <span>Tax (0%)</span>
-                        <span>₹0.00</span>
-                    </div>
-                    <div class="summary-row total">
-                        <span>Total Paid</span>
-                        <span>₹{{amount}}.00</span>
-                    </div>
-                </div>
+        <div class="company-info">
+            <strong>CodeOrbit Solutions</strong><br>
+            Whitehouse Vadgaon BK Pune 411041<br>
+            codeorbit.internship@gmail.com | www.codeorbit.in
+        </div>
 
-                <div class="amount-words">
-                    <strong>In Words:</strong> {{amountInWords}} Only
-                </div>
+        <div class="divider"></div>
 
-                <div class="bottom-section">
-                    <div class="note-box">
-                        <p><strong>Note:</strong> This is a computer-generated digital receipt for the internship enrollment fee at CodeOrbit Solutions. 
-                        No physical signature is required. For any queries regarding this payment, please contact us at codeorbit.internship@gmail.com</p>
-                    </div>
-                    <div class="signature-box">
-                        <img src="{{companyStamp}}" alt="Stamp" class="stamp">
-                        <div class="sig-line">Authorized Signatory</div>
-                        <div style="font-size: 10px; font-weight: 700; color: #1e3a8a; margin-top: 5px;">CodeOrbit India</div>
-                    </div>
-                </div>
+        <div class="receipt-header">
+            <h1 class="receipt-title">Payment Receipt</h1>
+            <div class="receipt-meta">
+                <div>Receipt No: <b>{{receiptNo}}</b></div>
+                <div>Date: <b>{{date}}</b></div>
+                <div class="status-badge">Success</div>
+            </div>
+        </div>
 
-                <div class="footer">
-                    <div>CodeOrbit Solutions | Whitehouse Vadgaon Bk Pune 411041 | www.codeorbit.in</div>
-                    <div class="partner-badges">
-                        <img src="{{msmeLogo}}" alt="MSME" class="badge">
-                        <img src="{{aicteLogo}}" alt="AICTE" class="badge">
-                    </div>
-                    <div style="margin-top: 15px; opacity: 0.7;">&copy; 2024 CodeOrbit India. Professional Internship Program.</div>
+        <div class="details-grid">
+            <div class="info-section">
+                <span class="section-label">Received From</span>
+                <div style="font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 5px;">{{name}}</div>
+                <div class="info-row">
+                    <span class="info-key">Email:</span>
+                    <span class="info-val">{{email}}</span>
                 </div>
+                <div class="info-row">
+                    <span class="info-key">Phone:</span>
+                    <span class="info-val">{{phone}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">College:</span>
+                    <span class="info-val" style="font-size: 11px;">{{college}}</span>
+                </div>
+            </div>
+            <div class="info-section">
+                <span class="section-label">Payment Details</span>
+                <div class="info-row">
+                    <span class="info-key">Transaction ID:</span>
+                    <span class="info-val" style="font-family: monospace;">{{transactionId}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Domain:</span>
+                    <span class="info-val">{{role}}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-key">Duration:</span>
+                    <span class="info-val">{{duration}} Month(s)</span>
+                </div>
+            </div>
+        </div>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 75%;">Description</th>
+                    <th style="width: 25%; text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="desc-title">Internship Program Enrollment Fee</div>
+                        <div class="desc-sub">Professional Training & Certification - {{role}}</div>
+                    </td>
+                    <td style="text-align: right; font-weight: 700; color: var(--navy);">₹{{amount}}.00</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="summary-container">
+            <div class="summary-box">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>₹{{amount}}.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Taxes (GST 0%)</span>
+                    <span>₹0.00</span>
+                </div>
+                <div class="summary-row summary-total">
+                    <span>Total Paid</span>
+                    <span>₹{{amount}}.00</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="amount-words">
+            <strong>Amount in Words:</strong> {{amountInWords}} Only
+        </div>
+
+        <div class="footer">
+            <div class="note-box">
+                <strong>NOTE:</strong><br>
+                This is a computer-generated electronic receipt and does not require a physical signature. The fee paid is for the professional internship program enrollment at CodeOrbit Solutions. For any queries, please reach out to us at codeorbit.internship@gmail.com.
+            </div>
+            <div class="signature-section">
+                <img src="{{companyStamp}}" class="stamp" alt="">
+                <div class="sig-line">Authorized Signatory</div>
+                <div class="sig-title">CodeOrbit India</div>
             </div>
         </div>
     </div>
 </body>
 </html>
-
