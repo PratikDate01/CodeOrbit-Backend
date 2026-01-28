@@ -32,8 +32,7 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
     // Cloudinary upload options according to requirements
     const options = {
       public_id: `${folder}/${cleanPublicId}`.replace(/\/+/g, "/"),
-      resource_type: "raw",              // Forces /raw/upload/
-      format: "pdf",                     // Recommended for correct MIME detection
+      resource_type: "auto",             // Auto-detect type (handles PDFs correctly)
       overwrite: true,
       invalidate: true,
       unique_filename: false,

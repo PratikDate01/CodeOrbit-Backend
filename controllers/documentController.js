@@ -92,6 +92,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
 
     // 4. Atomic Database Update (Only if ALL uploads succeeded)
+    console.log("[Step 4/4] Updating Database records...");
     const docUpdate = {
       applicationId,
       user: application.user?._id || application.user,
@@ -104,11 +105,19 @@ const generateDocuments = asyncHandler(async (req, res) => {
       verificationId,
     };
 
+    if (!docUpdate.offerLetterUrl || !docUpdate.certificateUrl || !docUpdate.locUrl) {
+      throw new Error("One or more Cloudinary upload URLs are missing");
+    }
+
     const document = await Document.findOneAndUpdate(
       { applicationId },
       { $set: docUpdate },
       { upsert: true, new: true }
     );
+
+    if (!document) {
+      throw new Error("Failed to update or create Document record");
+    }
 
     // Update application status
     application.status = "Approved";
@@ -116,7 +125,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     if (reqEndDate) application.endDate = reqEndDate;
     await application.save();
 
-    console.log(`[Controller] SUCCESS: All documents generated and stored for ${applicationId}`);
+    console.log(`[Controller] SUCCESS: All documents generated, uploaded, and records saved for ${applicationId}`);
 
     res.status(201).json({
       success: true,
@@ -129,11 +138,14 @@ const generateDocuments = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error("[Controller] CRITICAL ERROR during document process:", error);
-    res.status(500).json({
-      success: false,
-      message: "Document generation failed",
-      error: error.message
-    });
+    // Ensure we don't send a success response if something failed
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        message: "Document generation failed",
+        error: error.message
+      });
+    }
   }
 });
 
@@ -185,6 +197,10 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
     const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}`);
 
+    if (!upload || !upload.secure_url) {
+      throw new Error("Payment slip upload failed: No URL returned from Cloudinary");
+    }
+
     const updatedDoc = await Document.findOneAndUpdate(
       { applicationId },
       { 
@@ -199,6 +215,10 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
       { upsert: true, new: true }
     );
 
+    if (!updatedDoc) {
+      throw new Error("Failed to update Document record with payment slip");
+    }
+
     res.status(201).json({
       success: true,
       message: regenerate ? "Payment slip regenerated successfully" : "Payment slip generated successfully",
@@ -206,7 +226,13 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("[Controller] Payment Slip Error:", error);
-    res.status(500).json({ success: false, message: error.message });
+    if (!res.headersSent) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Payment slip generation failed",
+        error: error.message 
+      });
+    }
   }
 });
 
