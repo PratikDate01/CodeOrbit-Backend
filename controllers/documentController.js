@@ -84,10 +84,15 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // Start PDF generation and Cloudinary upload
     try {
       // Generate and Upload Offer Letter
-      console.log("Generating and Uploading Offer Letter...");
+      console.log(`[Process] Generating Offer Letter for Application: ${applicationId}`);
       const offerLetterBuffer = await generatePDF("offerLetter", docData, {
         margin: { top: "0", bottom: "0", left: "0", right: "0" }
       });
+
+      if (!offerLetterBuffer || offerLetterBuffer.length < 1000) {
+        throw new Error(`Offer Letter PDF buffer is too small or empty (${offerLetterBuffer?.length} bytes)`);
+      }
+
       const offerLetterUpload = await uploadBufferToCloudinary(
         offerLetterBuffer,
         "documents/offer_letters",
@@ -96,11 +101,16 @@ const generateDocuments = asyncHandler(async (req, res) => {
       );
 
       // Generate and Upload Certificate (Landscape)
-      console.log("Generating and Uploading Certificate...");
+      console.log(`[Process] Generating Certificate for Application: ${applicationId}`);
       const certificateBuffer = await generatePDF("certificate", docData, { 
         landscape: true, 
         margin: { top: "0", bottom: "0", left: "0", right: "0" } 
       });
+
+      if (!certificateBuffer || certificateBuffer.length < 1000) {
+        throw new Error(`Certificate PDF buffer is too small or empty (${certificateBuffer?.length} bytes)`);
+      }
+
       const certificateUpload = await uploadBufferToCloudinary(
         certificateBuffer,
         "documents/certificates",
@@ -109,10 +119,15 @@ const generateDocuments = asyncHandler(async (req, res) => {
       );
 
       // Generate and Upload LOC
-      console.log("Generating and Uploading LOC...");
+      console.log(`[Process] Generating LOC for Application: ${applicationId}`);
       const locBuffer = await generatePDF("loc", docData, {
         margin: { top: "0", bottom: "0", left: "0", right: "0" }
       });
+
+      if (!locBuffer || locBuffer.length < 1000) {
+        throw new Error(`LOC PDF buffer is too small or empty (${locBuffer?.length} bytes)`);
+      }
+
       const locUpload = await uploadBufferToCloudinary(
         locBuffer,
         "documents/locs",
@@ -261,17 +276,25 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
   };
 
   try {
-    console.log("Generating and Uploading Payment Slip...");
+    console.log(`[Process] Generating Payment Slip for Application: ${applicationId}`);
     const buffer = await generatePDF("paymentSlip", docData, {
       margin: { top: "0", bottom: "0", left: "0", right: "0" }
     });
     
+    if (!buffer || buffer.length < 500) {
+      throw new Error(`Payment slip PDF buffer is too small or empty (${buffer?.length} bytes)`);
+    }
+
     const uploadResult = await uploadBufferToCloudinary(
       buffer,
       "documents/payment_slips",
       `payment_slip_${applicationId}.pdf`,
       "raw"
     );
+
+    if (!uploadResult || !uploadResult.secure_url) {
+      throw new Error("Cloudinary upload failed: No secure_url returned");
+    }
 
     let document = await Document.findOne({ applicationId });
     if (document) {
