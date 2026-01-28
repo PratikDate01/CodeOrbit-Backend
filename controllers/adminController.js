@@ -7,16 +7,26 @@ const Contact = require("../models/Contact");
 // @access  Private/Admin
 const getStats = async (req, res, next) => {
   try {
-    console.log("Fetching admin stats...");
+    console.log("Fetching admin stats - Start");
+    
+    console.log("Counting applications...");
     const totalApplications = await InternshipApplication.countDocuments();
+    
+    console.log("Counting messages...");
     const totalMessages = await Contact.countDocuments();
+    
+    console.log("Counting users...");
     const totalUsers = await User.countDocuments({ role: "client" });
+    
+    console.log("Counting pending reviews...");
     const pendingReviews = await InternshipApplication.countDocuments({ status: "New" });
 
+    console.log("Aggregating applications by status...");
     const applicationsByStatus = await InternshipApplication.aggregate([
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
 
+    console.log("Fetching recent applications...");
     const recentApplications = await InternshipApplication.find()
       .sort({ createdAt: -1 })
       .limit(5);
@@ -37,7 +47,8 @@ const getStats = async (req, res, next) => {
       recentApplications,
     });
   } catch (error) {
-    console.error("Error in getStats:", error);
+    console.error("Error in getStats Controller:", error.message);
+    console.error(error.stack);
     next(error);
   }
 };
