@@ -24,26 +24,28 @@ const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw"
 
     const options = {
       folder: folder,
-      public_id: filename.replace(".pdf", ""), // Cloudinary adds extension for raw
+      public_id: filename, // Keep the full filename including extension
       resource_type: resourceType,
       overwrite: true,
-      invalidate: true
+      invalidate: true,
+      content_disposition: "inline" // Try to force inline viewing
     };
 
-    console.log(`[Cloudinary] Initiating ${resourceType} upload: ${folder}/${filename} (${buffer.length} bytes)`);
+    console.log(`[Cloudinary] Starting ${resourceType} upload for: ${filename}`);
+    console.log(`[Cloudinary] Folder: ${folder}, Size: ${buffer.length} bytes`);
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,
       (error, result) => {
         if (error) {
-          console.error(`[Cloudinary] Callback Error for ${filename}:`, error);
+          console.error(`[Cloudinary] UPLOAD ERROR for ${filename}:`, error);
           return reject(error);
         }
         if (!result || !result.secure_url) {
-          console.error(`[Cloudinary] Invalid result for ${filename}`);
+          console.error(`[Cloudinary] INVALID RESULT for ${filename}`);
           return reject(new Error("Cloudinary upload succeeded but no URL returned"));
         }
-        console.log(`[Cloudinary] SUCCESS: ${result.secure_url}`);
+        console.log(`[Cloudinary] SUCCESS: ${filename} => ${result.secure_url}`);
         resolve(result);
       }
     );

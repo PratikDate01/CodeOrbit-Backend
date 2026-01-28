@@ -18,10 +18,21 @@ const getBase64Image = (filePath) => {
 };
 
 const generateDocuments = asyncHandler(async (req, res) => {
-  const { applicationId, startDate: reqStartDate, endDate: reqEndDate } = req.body;
+  const { applicationId, startDate: reqStartDate, endDate: reqEndDate, regenerate = false } = req.body;
   
-  // Always fetch existing record to preserve verificationId if it exists
+  // 1. Check if documents already exist and we are NOT regenerating
   const existingDoc = await Document.findOne({ applicationId });
+  if (!regenerate && existingDoc?.offerLetterUrl && existingDoc?.certificateUrl && existingDoc?.locUrl) {
+    console.log(`[Controller] Documents already exist for ${applicationId}, skipping generation`);
+    return res.status(200).json({
+      success: true,
+      message: "Documents already exist",
+      verificationId: existingDoc.verificationId,
+      offerLetterUrl: existingDoc.offerLetterUrl,
+      certificateUrl: existingDoc.certificateUrl,
+      locUrl: existingDoc.locUrl
+    });
+  }
   
   // 2. Fetch Application Data
   const application = await InternshipApplication.findById(applicationId).populate("user");
@@ -30,7 +41,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
-  console.log(`[Controller] Starting document generation for: ${application.name}`);
+  console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} documents for: ${application.name}`);
 
   const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationId}`;
@@ -55,28 +66,35 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // Offer Letter
     console.log("[Step 1/3] Generating Offer Letter...");
     const olBuffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
-    if (!olBuffer || olBuffer.length < 5000) throw new Error("Offer Letter PDF is corrupt or too small");
+    if (!olBuffer || olBuffer.length < 5000) {
+      throw new Error(`Offer Letter PDF generation failed or buffer too small (${olBuffer?.length || 0} bytes)`);
+    }
     
-    const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}.pdf`, "raw");
+    // Use "auto" so Cloudinary detects PDF and sets proper Content-Type for inline viewing
+    const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}.pdf`, "auto");
 
     // Certificate
     console.log("[Step 2/3] Generating Certificate...");
     const certBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
-    if (!certBuffer || certBuffer.length < 5000) throw new Error("Certificate PDF is corrupt or too small");
+    if (!certBuffer || certBuffer.length < 5000) {
+      throw new Error(`Certificate PDF generation failed or buffer too small (${certBuffer?.length || 0} bytes)`);
+    }
     
-    const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}.pdf`, "raw");
+    const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}.pdf`, "auto");
 
     // LOC
     console.log("[Step 3/3] Generating LOC...");
     const locBuffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
-    if (!locBuffer || locBuffer.length < 5000) throw new Error("LOC PDF is corrupt or too small");
+    if (!locBuffer || locBuffer.length < 5000) {
+      throw new Error(`LOC PDF generation failed or buffer too small (${locBuffer?.length || 0} bytes)`);
+    }
     
-    const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}.pdf`, "raw");
+    const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}.pdf`, "auto");
 
-    // 4. Atomic Database Update (Only if all uploads succeeded)
+    // 4. Atomic Database Update (Only if ALL uploads succeeded)
     const docUpdate = {
       applicationId,
-      user: application.user?._id || req.user?._id,
+      user: application.user?._id || application.user,
       offerLetterUrl: olUpload.secure_url,
       offerLetterPublicId: olUpload.public_id,
       certificateUrl: certUpload.secure_url,
@@ -86,7 +104,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       verificationId,
     };
 
-    let document = await Document.findOneAndUpdate(
+    const document = await Document.findOneAndUpdate(
       { applicationId },
       { $set: docUpdate },
       { upsert: true, new: true }
@@ -98,11 +116,11 @@ const generateDocuments = asyncHandler(async (req, res) => {
     if (reqEndDate) application.endDate = reqEndDate;
     await application.save();
 
-    console.log(`[Controller] Successfully completed all tasks for ${applicationId}`);
+    console.log(`[Controller] SUCCESS: All documents generated and stored for ${applicationId}`);
 
     res.status(201).json({
       success: true,
-      message: "All documents generated and uploaded successfully",
+      message: regenerate ? "Documents regenerated successfully" : "All documents generated and uploaded successfully",
       verificationId: document.verificationId,
       offerLetterUrl: document.offerLetterUrl,
       certificateUrl: document.certificateUrl,
@@ -113,14 +131,23 @@ const generateDocuments = asyncHandler(async (req, res) => {
     console.error("[Controller] CRITICAL ERROR during document process:", error);
     res.status(500).json({
       success: false,
-      message: "Document generation failed at a critical step",
+      message: "Document generation failed",
       error: error.message
     });
   }
 });
 
 const generatePaymentSlip = asyncHandler(async (req, res) => {
-  const { applicationId } = req.body;
+  const { applicationId, regenerate = false } = req.body;
+
+  const existingDoc = await Document.findOne({ applicationId });
+  if (!regenerate && existingDoc?.paymentSlipUrl) {
+    return res.status(200).json({
+      success: true,
+      message: "Payment slip already exists",
+      paymentSlipUrl: existingDoc.paymentSlipUrl
+    });
+  }
 
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application || application.paymentStatus !== "Verified") {
@@ -128,8 +155,9 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     throw new Error("Application not found or payment not verified");
   }
 
-  console.log(`[Controller] Generating Payment Slip for: ${application.name}`);
+  console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} Payment Slip for: ${application.name}`);
 
+  const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const amount = application.amount || 0;
   const docData = {
     receiptNo: `REC-${Date.now().toString().slice(-6)}`,
@@ -148,20 +176,30 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
   try {
     const buffer = await generatePDF("paymentSlip", docData, { margin: { top: "0", bottom: "0" } });
-    if (!buffer || buffer.length < 2000) throw new Error("Payment slip PDF is corrupt");
+    if (!buffer || buffer.length < 2000) {
+      throw new Error(`Payment slip PDF generation failed or buffer too small (${buffer?.length || 0} bytes)`);
+    }
 
-    const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}.pdf`, "raw");
+    const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}.pdf`, "auto");
 
-    await Document.findOneAndUpdate(
+    const updatedDoc = await Document.findOneAndUpdate(
       { applicationId },
-      { $set: { paymentSlipUrl: upload.secure_url, paymentSlipPublicId: upload.public_id } },
-      { upsert: true }
+      { 
+        $set: { 
+          paymentSlipUrl: upload.secure_url, 
+          paymentSlipPublicId: upload.public_id,
+          user: application.user?._id || application.user,
+          verificationId,
+          applicationId
+        } 
+      },
+      { upsert: true, new: true }
     );
 
     res.status(201).json({
       success: true,
-      message: "Payment slip generated successfully",
-      paymentSlipUrl: upload.secure_url
+      message: regenerate ? "Payment slip regenerated successfully" : "Payment slip generated successfully",
+      paymentSlipUrl: updatedDoc.paymentSlipUrl
     });
   } catch (error) {
     console.error("[Controller] Payment Slip Error:", error);
