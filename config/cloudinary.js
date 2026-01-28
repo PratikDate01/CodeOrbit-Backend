@@ -14,7 +14,7 @@ cloudinary.config({
  * @param {string} filename - Desired filename
  * @param {string} resourceType - Cloudinary resource type (raw, image, auto)
  */
-const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw") => {
+const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "auto") => {
   return new Promise((resolve, reject) => {
     // 1. Pre-upload validation
     if (!buffer || !Buffer.isBuffer(buffer)) {
@@ -27,21 +27,23 @@ const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw"
       return reject(new Error("Upload failed: Buffer is too small"));
     }
 
-    // Ensure we have correct extension for raw PDFs
-    let cleanPublicId = filename;
-    if (resourceType === "raw" && !filename.toLowerCase().endsWith(".pdf")) {
-      cleanPublicId = `${filename}.pdf`;
-    }
-    
+    // For PDFs, we want 'image' or 'auto' to ensure they are viewable in browsers
+    // 'raw' resource type often leads to 'untrusted' errors or download-only behavior.
+    const finalResourceType = (filename.toLowerCase().endsWith(".pdf") || resourceType === "raw") 
+      ? "auto" 
+      : resourceType;
+
     // Cloudinary upload options
     const options = {
-      public_id: `${folder}/${cleanPublicId}`.replace(/\/+/g, "/"),
-      resource_type: resourceType,
+      folder: folder.replace(/\/+/g, "/"),
+      public_id: filename.replace(/\.[^/.]+$/, ""), // Remove extension for better path handling in Cloudinary
+      resource_type: finalResourceType,
       overwrite: true,
       invalidate: true,
+      access_mode: "public",
     };
 
-    console.log(`[Cloudinary] Uploading ${buffer.length} bytes as ${resourceType} for: ${options.public_id}`);
+    console.log(`[Cloudinary] Uploading ${buffer.length} bytes as ${finalResourceType} to ${options.folder}/${options.public_id}`);
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,

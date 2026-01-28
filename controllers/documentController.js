@@ -72,6 +72,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     }
     
     const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}`);
+    if (!olUpload || !olUpload.secure_url) throw new Error("Offer Letter upload failed: No URL returned");
 
     // Certificate
     console.log("[Step 2/3] Generating Certificate...");
@@ -81,6 +82,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     }
     
     const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}`);
+    if (!certUpload || !certUpload.secure_url) throw new Error("Certificate upload failed: No URL returned");
 
     // LOC
     console.log("[Step 3/3] Generating LOC...");
@@ -90,6 +92,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
     }
     
     const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
+    if (!locUpload || !locUpload.secure_url) throw new Error("LOC upload failed: No URL returned");
 
     // 4. Atomic Database Update (Only if ALL uploads succeeded)
     console.log("[Step 4/4] Updating Database records...");
