@@ -1,6 +1,7 @@
 const Document = require("../models/Document");
 const InternshipApplication = require("../models/InternshipApplication");
 const { generatePDF } = require("../utils/pdfGenerator");
+const { numberToWords } = require("../utils/numberToWords");
 const asyncHandler = require("../middleware/asyncHandler");
 const { uploadBufferToCloudinary } = require("../config/cloudinary");
 const QRCode = require("qrcode");
@@ -168,9 +169,12 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     role: application.preferredDomain,
     duration: application.duration,
     amount: amount,
+    amountInWords: numberToWords(amount),
     date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     transactionId: application.transactionId || 'N/A',
     companyLogo: getBase64Image("assets/logos/Company Logo.png"),
+    aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),
+    msmeLogo: getBase64Image("assets/logos/MSME LOGO.png"),
     companyStamp: getBase64Image("assets/stamps/COMPANY STAMP.png"),
   };
 
