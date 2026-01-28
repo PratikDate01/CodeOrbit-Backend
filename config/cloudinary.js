@@ -29,14 +29,14 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
     // Ensure we have a clean filename without any .pdf extension
     const cleanPublicId = filename.replace(/\.pdf$/gi, "");
     
-    // For RAW resource type, we must include the folder in the public_id 
-    // and explicitly include the .pdf extension at the end of the public_id.
+    // Cloudinary upload options according to requirements
     const options = {
-      public_id: `${folder}/${cleanPublicId}.pdf`.replace(/\/+/g, "/"),
+      public_id: `${folder}/${cleanPublicId}`.replace(/\/+/g, "/"),
       resource_type: "raw",              // Forces /raw/upload/
+      format: "pdf",                     // Recommended for correct MIME detection
       overwrite: true,
       invalidate: true,
-      unique_filename: false,            // Ensures no random characters are added
+      unique_filename: false,
     };
 
     console.log(`[Cloudinary] Uploading ${buffer.length} bytes for: ${options.public_id}`);

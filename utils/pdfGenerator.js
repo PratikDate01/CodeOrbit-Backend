@@ -80,11 +80,17 @@ const generatePDF = async (templateName, data, options = {}) => {
     console.log("[PDF] Generating PDF...");
     const pdfBuffer = await page.pdf(pdfOptions);
     
+    if (!pdfBuffer) {
+        throw new Error("Puppeteer failed to generate PDF buffer (null/undefined)");
+    }
+
     // Convert to Buffer if it's a Uint8Array (standard Puppeteer return)
     const finalBuffer = Buffer.from(pdfBuffer);
     
-    if (!finalBuffer || finalBuffer.length < 1000) {
-        throw new Error(`Generated PDF buffer is suspiciously small (${finalBuffer?.length || 0} bytes)`);
+    // Validate PDF header and size
+    const isPDF = finalBuffer.slice(0, 5).toString() === "%PDF-";
+    if (!isPDF || finalBuffer.length < 1000) {
+        throw new Error(`Invalid PDF generated. Header: ${finalBuffer.slice(0, 5).toString()}, Size: ${finalBuffer.length} bytes`);
     }
 
     console.log(`[PDF] Successfully generated (${finalBuffer.length} bytes)`);
