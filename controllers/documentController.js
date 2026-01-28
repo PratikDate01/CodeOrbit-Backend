@@ -67,18 +67,17 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // Offer Letter
     console.log("[Step 1/3] Generating Offer Letter...");
     const olBuffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
-    if (!olBuffer || olBuffer.length < 5000) {
-      throw new Error(`Offer Letter PDF generation failed or buffer too small (${olBuffer?.length || 0} bytes)`);
+    if (!olBuffer || !Buffer.isBuffer(olBuffer) || olBuffer.length < 5000) {
+      throw new Error(`Offer Letter PDF generation failed or buffer invalid/too small (${olBuffer?.length || 0} bytes)`);
     }
     
-    // Use the updated helper which defaults to "raw" and handles .pdf extension correctly
     const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}`);
 
     // Certificate
     console.log("[Step 2/3] Generating Certificate...");
     const certBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
-    if (!certBuffer || certBuffer.length < 5000) {
-      throw new Error(`Certificate PDF generation failed or buffer too small (${certBuffer?.length || 0} bytes)`);
+    if (!certBuffer || !Buffer.isBuffer(certBuffer) || certBuffer.length < 5000) {
+      throw new Error(`Certificate PDF generation failed or buffer invalid/too small (${certBuffer?.length || 0} bytes)`);
     }
     
     const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}`);
@@ -86,8 +85,8 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // LOC
     console.log("[Step 3/3] Generating LOC...");
     const locBuffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
-    if (!locBuffer || locBuffer.length < 5000) {
-      throw new Error(`LOC PDF generation failed or buffer too small (${locBuffer?.length || 0} bytes)`);
+    if (!locBuffer || !Buffer.isBuffer(locBuffer) || locBuffer.length < 5000) {
+      throw new Error(`LOC PDF generation failed or buffer invalid/too small (${locBuffer?.length || 0} bytes)`);
     }
     
     const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
@@ -180,8 +179,8 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
   try {
     const buffer = await generatePDF("paymentSlip", docData, { margin: { top: "0", bottom: "0" } });
-    if (!buffer || buffer.length < 2000) {
-      throw new Error(`Payment slip PDF generation failed or buffer too small (${buffer?.length || 0} bytes)`);
+    if (!buffer || !Buffer.isBuffer(buffer) || buffer.length < 2000) {
+      throw new Error(`Payment slip PDF generation failed or buffer invalid/too small (${buffer?.length || 0} bytes)`);
     }
 
     const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}`);

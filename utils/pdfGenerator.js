@@ -80,12 +80,15 @@ const generatePDF = async (templateName, data, options = {}) => {
     console.log("[PDF] Generating PDF...");
     const pdfBuffer = await page.pdf(pdfOptions);
     
-    if (!pdfBuffer || pdfBuffer.length === 0) {
-        throw new Error("Generated PDF buffer is empty");
+    // Convert to Buffer if it's a Uint8Array (standard Puppeteer return)
+    const finalBuffer = Buffer.from(pdfBuffer);
+    
+    if (!finalBuffer || finalBuffer.length < 1000) {
+        throw new Error(`Generated PDF buffer is suspiciously small (${finalBuffer?.length || 0} bytes)`);
     }
 
-    console.log(`[PDF] Successfully generated (${pdfBuffer.length} bytes)`);
-    return pdfBuffer;
+    console.log(`[PDF] Successfully generated (${finalBuffer.length} bytes)`);
+    return finalBuffer;
   } catch (error) {
     console.error("[PDF] CRITICAL FAILURE:", error);
     throw new Error(`PDF Generation failed: ${error.message}`);
