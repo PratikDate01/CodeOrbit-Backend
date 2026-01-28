@@ -94,7 +94,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const offerLetterUpload = await uploadBufferToCloudinary(
         offerLetterBuffer,
         "documents/offer_letters",
-        `offer_letter_${applicationId}.pdf`,
+        `offer_letter_${applicationId}`,
         "image"
       );
 
@@ -107,7 +107,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const certificateUpload = await uploadBufferToCloudinary(
         certificateBuffer,
         "documents/certificates",
-        `certificate_${applicationId}.pdf`,
+        `certificate_${applicationId}`,
         "image"
       );
 
@@ -119,7 +119,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       const locUpload = await uploadBufferToCloudinary(
         locBuffer,
         "documents/locs",
-        `loc_${applicationId}.pdf`,
+        `loc_${applicationId}`,
         "image"
       );
 
@@ -273,7 +273,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     const uploadResult = await uploadBufferToCloudinary(
       buffer,
       "documents/payment_slips",
-      `payment_slip_${applicationId}.pdf`,
+      `payment_slip_${applicationId}`,
       "image"
     );
 
