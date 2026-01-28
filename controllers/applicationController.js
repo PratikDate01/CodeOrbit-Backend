@@ -1,5 +1,4 @@
 const Application = require("../models/Application");
-const mongoose = require("mongoose");
 
 // @desc    Create new application
 // @route   POST /api/applications

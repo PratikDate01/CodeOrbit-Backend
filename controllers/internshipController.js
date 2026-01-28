@@ -1,6 +1,5 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const asyncHandler = require("../middleware/asyncHandler");
-const mongoose = require("mongoose");
 const { uploadBufferToCloudinary } = require("../config/cloudinary");
 
 // @desc    Apply for Internship
