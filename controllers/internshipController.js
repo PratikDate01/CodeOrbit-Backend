@@ -1,6 +1,5 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const asyncHandler = require("../middleware/asyncHandler");
-const { uploadBufferToCloudinary } = require("../config/cloudinary");
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -135,51 +134,10 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
   res.json(appsWithDocs);
 });
 
-// @desc    Submit payment details
-// @route   POST /api/internships/:id/payment
-// @access  Private
-const submitPaymentDetails = asyncHandler(async (req, res) => {
-  const { transactionId } = req.body;
-  const application = await InternshipApplication.findById(req.params.id);
-
-  if (application) {
-    if (application.user.toString() !== req.user._id.toString()) {
-      res.status(401);
-      throw new Error("Not authorized");
-    }
-
-    application.transactionId = transactionId;
-    if (req.file) {
-      try {
-        const uploadResult = await uploadBufferToCloudinary(
-          req.file.buffer,
-          "payments/screenshots",
-          `payment_${application._id}_${Date.now()}`,
-          "image"
-        );
-        application.paymentScreenshot = uploadResult.secure_url;
-        application.paymentScreenshotPublicId = uploadResult.public_id;
-      } catch (uploadError) {
-        console.error("Cloudinary upload failed:", uploadError);
-        res.status(500);
-        throw new Error("Failed to upload payment screenshot");
-      }
-    }
-    application.paymentStatus = "Processing";
-    
-    const updatedApplication = await application.save();
-    res.json(updatedApplication);
-  } else {
-    res.status(404);
-    throw new Error("Application not found");
-  }
-});
-
 module.exports = {
   applyForInternship,
   getInternshipApplications,
   updateInternshipStatus,
   deleteInternshipApplication,
   getMyInternshipApplications,
-  submitPaymentDetails,
 };

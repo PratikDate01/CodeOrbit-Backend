@@ -6,14 +6,11 @@ const {
   updateInternshipStatus,
   deleteInternshipApplication,
   getMyInternshipApplications,
-  submitPaymentDetails,
 } = require("../controllers/internshipController");
 const { protect, admin } = require("../middleware/authMiddleware");
-const upload = require("../utils/upload");
 
 router.post("/apply", protect, applyForInternship);
 router.get("/my-applications", protect, getMyInternshipApplications);
-router.post("/:id/payment", protect, upload.single("screenshot"), submitPaymentDetails);
 
 // Admin routes
 router.get("/", protect, admin, getInternshipApplications);

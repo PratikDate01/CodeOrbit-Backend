@@ -55,6 +55,15 @@ const internshipApplicationSchema = mongoose.Schema(
     transactionId: {
       type: String,
     },
+    razorpayOrderId: {
+      type: String,
+    },
+    razorpayPaymentId: {
+      type: String,
+    },
+    razorpaySignature: {
+      type: String,
+    },
     paymentScreenshot: {
       type: String,
     },
