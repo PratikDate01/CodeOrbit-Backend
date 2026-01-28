@@ -5,9 +5,12 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const compression = require("compression");
 const path = require("path");
+const mongoSanitize = require("express-mongo-sanitize");
+const xss = require("xss-clean");
+const hpp = require("hpp");
 const connectDB = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
-const { apiLimiter } = require("./middleware/rateLimiter");
+const { apiLimiter, contactLimiter, authLimiter } = require("./middleware/rateLimiter");
 
 dotenv.config();
 
@@ -20,6 +23,10 @@ const app = express();
 app.use(helmet({
   crossOriginResourcePolicy: false, // Allow serving static images
 }));
+app.use(express.json({ limit: "10kb" })); // Body limit to prevent DDoS
+app.use(mongoSanitize()); // Data sanitization against NoSQL injection
+app.use(xss()); // Data sanitization against XSS
+app.use(hpp()); // Prevent HTTP parameter pollution
 app.use(compression());
 app.use(morgan("dev"));
 
@@ -60,6 +67,10 @@ app.use("/assets", express.static(path.resolve(__dirname, "assets")));
 
 // 6. Routes
 app.get("/api/ping", (req, res) => res.status(200).send("pong"));
+
+// Apply stricter rate limiting to auth and payments
+app.use("/api/auth", authLimiter);
+app.use("/api/payments", authLimiter);
 
 app.use("/api/contact", require("./routes/contactRoutes"));
 app.use("/api/internships", require("./routes/internshipRoutes"));

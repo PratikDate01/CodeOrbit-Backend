@@ -21,4 +21,14 @@ const contactLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-module.exports = { apiLimiter, contactLimiter };
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: 10, // Limit each IP to 10 login/payment attempts per hour
+  message: {
+    message: "Too many attempts from this IP, please try again after an hour",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+module.exports = { apiLimiter, contactLimiter, authLimiter };
