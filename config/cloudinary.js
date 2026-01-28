@@ -12,27 +12,28 @@ cloudinary.config({
  * @param {Buffer} buffer - The file buffer
  * @param {string} folder - Cloudinary folder name
  * @param {string} filename - Desired filename
- * @param {string} resourceType - raw, image, auto
  */
-const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw") => {
+const uploadBufferToCloudinary = (buffer, folder, filename) => {
   return new Promise((resolve, reject) => {
     // 1. Pre-upload validation
-    if (!buffer || buffer.length === 0) {
-      console.error(`[Cloudinary] Upload failed: Buffer is empty for ${filename}`);
-      return reject(new Error("PDF Buffer is empty - cannot upload"));
+    if (!buffer || buffer.length < 1000) {
+      console.error(`[Cloudinary] Upload failed: Buffer is empty or too small for ${filename}`);
+      return reject(new Error("PDF Buffer is empty or corrupt - cannot upload"));
     }
 
+    // Clean public_id and ensure it ends with .pdf for raw resource type
+    const cleanPublicId = filename.replace(/\.pdf$/i, "");
+    
     const options = {
       folder: folder,
-      public_id: filename, // Keep the full filename including extension
-      resource_type: resourceType,
+      public_id: `${cleanPublicId}.pdf`, 
+      resource_type: "raw",
       overwrite: true,
       invalidate: true,
-      content_disposition: "inline" // Try to force inline viewing
+      content_disposition: "inline" 
     };
 
-    console.log(`[Cloudinary] Starting ${resourceType} upload for: ${filename}`);
-    console.log(`[Cloudinary] Folder: ${folder}, Size: ${buffer.length} bytes`);
+    console.log(`[Cloudinary] Starting RAW upload for: ${options.public_id}`);
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,
@@ -45,12 +46,12 @@ const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw"
           console.error(`[Cloudinary] INVALID RESULT for ${filename}`);
           return reject(new Error("Cloudinary upload succeeded but no URL returned"));
         }
-        console.log(`[Cloudinary] SUCCESS: ${filename} => ${result.secure_url}`);
+        console.log(`[Cloudinary] SUCCESS: ${result.secure_url}`);
         resolve(result);
       }
     );
 
-    // 2. Handle stream errors (e.g., network issues during streaming)
+    // 2. Handle stream errors
     uploadStream.on("error", (err) => {
       console.error(`[Cloudinary] Stream Event Error for ${filename}:`, err);
       reject(err);

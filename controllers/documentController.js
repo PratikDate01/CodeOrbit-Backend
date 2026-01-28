@@ -70,8 +70,8 @@ const generateDocuments = asyncHandler(async (req, res) => {
       throw new Error(`Offer Letter PDF generation failed or buffer too small (${olBuffer?.length || 0} bytes)`);
     }
     
-    // Use "auto" so Cloudinary detects PDF and sets proper Content-Type for inline viewing
-    const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}.pdf`, "auto");
+    // Use the updated helper which defaults to "raw" and handles .pdf extension correctly
+    const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}`);
 
     // Certificate
     console.log("[Step 2/3] Generating Certificate...");
@@ -80,7 +80,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       throw new Error(`Certificate PDF generation failed or buffer too small (${certBuffer?.length || 0} bytes)`);
     }
     
-    const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}.pdf`, "auto");
+    const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}`);
 
     // LOC
     console.log("[Step 3/3] Generating LOC...");
@@ -89,7 +89,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
       throw new Error(`LOC PDF generation failed or buffer too small (${locBuffer?.length || 0} bytes)`);
     }
     
-    const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}.pdf`, "auto");
+    const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
 
     // 4. Atomic Database Update (Only if ALL uploads succeeded)
     const docUpdate = {
@@ -180,7 +180,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
       throw new Error(`Payment slip PDF generation failed or buffer too small (${buffer?.length || 0} bytes)`);
     }
 
-    const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}.pdf`, "auto");
+    const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}`);
 
     const updatedDoc = await Document.findOneAndUpdate(
       { applicationId },
