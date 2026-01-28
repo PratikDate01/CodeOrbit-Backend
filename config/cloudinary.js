@@ -16,24 +16,24 @@ cloudinary.config({
 const uploadBufferToCloudinary = (buffer, folder, filename) => {
   return new Promise((resolve, reject) => {
     // 1. Pre-upload validation
-    if (!buffer || buffer.length < 1000) {
+    if (!buffer || buffer.length < 500) {
       console.error(`[Cloudinary] Upload failed: Buffer is empty or too small for ${filename}`);
       return reject(new Error("PDF Buffer is empty or corrupt - cannot upload"));
     }
 
-    // Clean public_id and ensure it ends with .pdf for raw resource type
+    // Strip .pdf from public_id before upload
     const cleanPublicId = filename.replace(/\.pdf$/i, "");
     
     const options = {
       folder: folder,
-      public_id: `${cleanPublicId}.pdf`, 
-      resource_type: "raw",
+      public_id: cleanPublicId, // Strip .pdf from public_id
+      resource_type: "raw",     // Upload as raw to get /raw/upload/ URL
+      format: "pdf",            // Cloudinary appends .pdf automatically
       overwrite: true,
       invalidate: true,
-      content_disposition: "inline" 
     };
 
-    console.log(`[Cloudinary] Starting RAW upload for: ${options.public_id}`);
+    console.log(`[Cloudinary] Starting RAW upload for: ${cleanPublicId} with format pdf`);
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,
