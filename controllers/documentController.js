@@ -67,8 +67,8 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // Offer Letter
     console.log("[Step 1/3] Generating Offer Letter...");
     const olBuffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
-    if (!olBuffer || !Buffer.isBuffer(olBuffer) || olBuffer.length < 5000) {
-      throw new Error(`Offer Letter PDF generation failed or buffer invalid/too small (${olBuffer?.length || 0} bytes)`);
+    if (!olBuffer || !Buffer.isBuffer(olBuffer) || olBuffer.slice(0, 5).toString() !== "%PDF-") {
+      throw new Error(`Offer Letter PDF generation failed: Invalid or corrupted buffer`);
     }
     
     const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}`);
@@ -76,8 +76,8 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // Certificate
     console.log("[Step 2/3] Generating Certificate...");
     const certBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
-    if (!certBuffer || !Buffer.isBuffer(certBuffer) || certBuffer.length < 5000) {
-      throw new Error(`Certificate PDF generation failed or buffer invalid/too small (${certBuffer?.length || 0} bytes)`);
+    if (!certBuffer || !Buffer.isBuffer(certBuffer) || certBuffer.slice(0, 5).toString() !== "%PDF-") {
+      throw new Error(`Certificate PDF generation failed: Invalid or corrupted buffer`);
     }
     
     const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}`);
@@ -85,8 +85,8 @@ const generateDocuments = asyncHandler(async (req, res) => {
     // LOC
     console.log("[Step 3/3] Generating LOC...");
     const locBuffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
-    if (!locBuffer || !Buffer.isBuffer(locBuffer) || locBuffer.length < 5000) {
-      throw new Error(`LOC PDF generation failed or buffer invalid/too small (${locBuffer?.length || 0} bytes)`);
+    if (!locBuffer || !Buffer.isBuffer(locBuffer) || locBuffer.slice(0, 5).toString() !== "%PDF-") {
+      throw new Error(`LOC PDF generation failed: Invalid or corrupted buffer`);
     }
     
     const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
@@ -179,8 +179,8 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
   try {
     const buffer = await generatePDF("paymentSlip", docData, { margin: { top: "0", bottom: "0" } });
-    if (!buffer || !Buffer.isBuffer(buffer) || buffer.length < 2000) {
-      throw new Error(`Payment slip PDF generation failed or buffer invalid/too small (${buffer?.length || 0} bytes)`);
+    if (!buffer || !Buffer.isBuffer(buffer) || buffer.slice(0, 5).toString() !== "%PDF-") {
+      throw new Error(`Payment slip PDF generation failed: Invalid or corrupted buffer`);
     }
 
     const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}`);

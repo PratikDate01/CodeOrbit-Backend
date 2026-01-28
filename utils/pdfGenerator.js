@@ -87,13 +87,18 @@ const generatePDF = async (templateName, data, options = {}) => {
     // Convert to Buffer if it's a Uint8Array (standard Puppeteer return)
     const finalBuffer = Buffer.from(pdfBuffer);
     
+    // 10-byte header check as requested
+    const headerHex = finalBuffer.slice(0, 10).toString("hex");
+    const headerString = finalBuffer.slice(0, 10).toString("utf8");
+    console.log(`[PDF] Header (Hex): ${headerHex}`);
+    console.log(`[PDF] Header (String): ${headerString}`);
+
     // Validate PDF header and size
-    const isPDF = finalBuffer.slice(0, 5).toString() === "%PDF-";
-    if (!isPDF || finalBuffer.length < 1000) {
-        throw new Error(`Invalid PDF generated. Header: ${finalBuffer.slice(0, 5).toString()}, Size: ${finalBuffer.length} bytes`);
+    if (headerString.indexOf("%PDF-") !== 0 || finalBuffer.length < 1000) {
+        throw new Error(`Invalid PDF generated. Header: ${headerString}, Size: ${finalBuffer.length} bytes`);
     }
 
-    console.log(`[PDF] Successfully generated (${finalBuffer.length} bytes)`);
+    console.log(`[PDF] SUCCESS: Valid PDF buffer generated (${finalBuffer.length} bytes)`);
     return finalBuffer;
   } catch (error) {
     console.error("[PDF] CRITICAL FAILURE:", error);
