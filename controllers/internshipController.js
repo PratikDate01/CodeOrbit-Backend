@@ -154,7 +154,8 @@ const submitPaymentDetails = asyncHandler(async (req, res) => {
         const uploadResult = await uploadBufferToCloudinary(
           req.file.buffer,
           "payments/screenshots",
-          `payment_${application._id}_${Date.now()}`
+          `payment_${application._id}_${Date.now()}`,
+          "image"
         );
         application.paymentScreenshot = uploadResult.secure_url;
         application.paymentScreenshotPublicId = uploadResult.public_id;

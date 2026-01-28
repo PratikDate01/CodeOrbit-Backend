@@ -12,8 +12,9 @@ cloudinary.config({
  * @param {Buffer} buffer - The file buffer
  * @param {string} folder - Cloudinary folder name
  * @param {string} filename - Desired filename
+ * @param {string} resourceType - Cloudinary resource type (raw, image, auto)
  */
-const uploadBufferToCloudinary = (buffer, folder, filename) => {
+const uploadBufferToCloudinary = (buffer, folder, filename, resourceType = "raw") => {
   return new Promise((resolve, reject) => {
     // 1. Pre-upload validation
     if (!buffer || !Buffer.isBuffer(buffer)) {
@@ -21,24 +22,26 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
       return reject(new Error("Upload failed: Input is not a valid Buffer"));
     }
 
-    if (buffer.length < 1000) {
+    if (buffer.length < 100) {
       console.error(`[Cloudinary] Buffer too small (${buffer.length} bytes) for ${filename}`);
-      return reject(new Error("Upload failed: Buffer is too small to be a valid PDF"));
+      return reject(new Error("Upload failed: Buffer is too small"));
     }
 
-    // Ensure we have a clean filename without any .pdf extension
-    const cleanPublicId = filename.replace(/\.pdf$/gi, "");
+    // Ensure we have correct extension for raw PDFs
+    let cleanPublicId = filename;
+    if (resourceType === "raw" && !filename.toLowerCase().endsWith(".pdf")) {
+      cleanPublicId = `${filename}.pdf`;
+    }
     
-    // Cloudinary upload options according to requirements
+    // Cloudinary upload options
     const options = {
       public_id: `${folder}/${cleanPublicId}`.replace(/\/+/g, "/"),
-      resource_type: "auto",             // Auto-detect type (handles PDFs correctly)
+      resource_type: resourceType,
       overwrite: true,
       invalidate: true,
-      unique_filename: false,
     };
 
-    console.log(`[Cloudinary] Uploading ${buffer.length} bytes for: ${options.public_id}`);
+    console.log(`[Cloudinary] Uploading ${buffer.length} bytes as ${resourceType} for: ${options.public_id}`);
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,
