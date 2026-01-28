@@ -21,20 +21,20 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
       return reject(new Error("PDF Buffer is empty or corrupt - cannot upload"));
     }
 
-    // Strip .pdf from public_id if it exists to prevent double extension
-    const cleanPublicId = filename.replace(/\.pdf$/i, "");
+    // Ensure we have a clean filename without any .pdf extension
+    const cleanPublicId = filename.replace(/\.pdf$/gi, "");
     
+    // For RAW resource type, we must include the folder in the public_id 
+    // and explicitly include the .pdf extension at the end of the public_id.
     const options = {
-      folder: folder,
-      public_id: `${cleanPublicId}.pdf`, // For raw files, extension MUST be in public_id
-      resource_type: "raw",              // Ensures /raw/upload/ URL
+      public_id: `${folder}/${cleanPublicId}.pdf`.replace(/\/+/g, "/"),
+      resource_type: "raw",              // Forces /raw/upload/
       overwrite: true,
       invalidate: true,
-      unique_filename: false,            // Prevents Cloudinary from adding random suffixes
-      use_filename: true,               // Uses the provided filename
+      unique_filename: false,            // Ensures no random characters are added
     };
 
-    console.log(`[Cloudinary] Starting RAW upload for: ${options.public_id}`);
+    console.log(`[Cloudinary] Uploading with options:`, JSON.stringify(options));
 
     const uploadStream = cloudinary.uploader.upload_stream(
       options,
