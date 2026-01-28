@@ -18,8 +18,8 @@ const createOrder = asyncHandler(async (req, res) => {
 
   let amount = application.amount;
   if (!amount || amount === 0) {
-    // Fallback logic for amount based on duration if not set
-    amount = application.duration === 1 ? 399 : application.duration === 3 ? 599 : 999;
+    // Fallback logic: 1 Rupee for 1 month for testing
+    amount = application.duration === 1 ? 1 : application.duration === 3 ? 599 : 999;
     application.amount = amount;
     await application.save();
   }

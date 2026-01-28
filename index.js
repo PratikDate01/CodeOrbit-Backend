@@ -48,7 +48,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // 4. Rate Limiting (Exclude Admin/Critical Routes)
 app.use("/api", (req, res, next) => {
-  const skipPaths = ["/internships", "/documents", "/admin", "/auth", "/applications"];
+  const skipPaths = ["/internships", "/documents", "/admin", "/auth", "/applications", "/payments"];
   const isSkip = skipPaths.some(path => req.path.startsWith(path));
   if (isSkip) return next();
   return apiLimiter(req, res, next);
