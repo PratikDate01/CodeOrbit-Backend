@@ -30,6 +30,8 @@ const uploadBufferToCloudinary = (buffer, folder, filename) => {
       resource_type: "raw",              // Ensures /raw/upload/ URL
       overwrite: true,
       invalidate: true,
+      unique_filename: false,            // Prevents Cloudinary from adding random suffixes
+      use_filename: true,               // Uses the provided filename
     };
 
     console.log(`[Cloudinary] Starting RAW upload for: ${options.public_id}`);
