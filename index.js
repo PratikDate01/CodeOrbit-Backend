@@ -19,15 +19,47 @@ connectDB();
 
 const app = express();
 
-// 1. Core Parsers (MUST come before sanitization)
+// 1. CORS Configuration (MUST come before other middleware)
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "https://code-orbit-tech.vercel.app",
+  "http://localhost:3000"
+].filter(Boolean).map(url => url.replace(/\/$/, "")); // Remove trailing slashes
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is allowed
+    const isAllowed = allowedOrigins.some(allowed => {
+      return allowed === origin || allowed === origin.replace(/\/$/, "");
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.error(`CORS Blocked: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  optionsSuccessStatus: 200
+}));
+
+// 2. Core Parsers
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// 2. Security & Optimization Middleware
+// 3. Security & Optimization Middleware
 app.use(helmet({
   crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginEmbedderPolicy: false
 }));
-app.use(mongoSanitize()); // Now parses the already-parsed body
+app.use(mongoSanitize());
 app.use(xss()); 
 app.use(hpp({
   whitelist: [
@@ -43,26 +75,7 @@ app.use(hpp({
 app.use(compression());
 app.use(morgan("dev"));
 
-// 3. CORS Configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "https://code-orbit-tech.vercel.app",
-  "http://localhost:3000"
-].filter(Boolean);
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.error(`CORS Blocked: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true
-}));
-
-// 3. Static Folders
+// 4. Static Folders
 app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 app.use("/assets", express.static(path.resolve(__dirname, "assets")));
 
