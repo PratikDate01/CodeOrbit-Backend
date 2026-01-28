@@ -18,26 +18,11 @@ const getBase64Image = (filePath) => {
 };
 
 const generateDocuments = asyncHandler(async (req, res) => {
-  const { applicationId, startDate: reqStartDate, endDate: reqEndDate, regenerate = false } = req.body;
+  const { applicationId, startDate: reqStartDate, endDate: reqEndDate } = req.body;
   
-  // 1. Check for existing documents (unless regenerating)
+  // Always fetch existing record to preserve verificationId if it exists
   const existingDoc = await Document.findOne({ applicationId });
-  const hasValidUrls = existingDoc && 
-    existingDoc.offerLetterUrl?.includes('cloudinary') && 
-    existingDoc.certificateUrl?.includes('cloudinary');
-
-  if (existingDoc && !regenerate && hasValidUrls) {
-    console.log(`[Controller] Returning existing docs for application: ${applicationId}`);
-    return res.status(200).json({
-      success: true,
-      message: "Documents retrieved from cache",
-      verificationId: existingDoc.verificationId,
-      offerLetterUrl: existingDoc.offerLetterUrl,
-      certificateUrl: existingDoc.certificateUrl,
-      locUrl: existingDoc.locUrl
-    });
-  }
-
+  
   // 2. Fetch Application Data
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -135,12 +120,7 @@ const generateDocuments = asyncHandler(async (req, res) => {
 });
 
 const generatePaymentSlip = asyncHandler(async (req, res) => {
-  const { applicationId, regenerate = false } = req.body;
-
-  const existingDoc = await Document.findOne({ applicationId });
-  if (existingDoc && existingDoc.paymentSlipUrl && !regenerate) {
-    return res.status(200).json({ success: true, paymentSlipUrl: existingDoc.paymentSlipUrl });
-  }
+  const { applicationId } = req.body;
 
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application || application.paymentStatus !== "Verified") {
