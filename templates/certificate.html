@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Certificate of Internship Completion</title>
-    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #1e3a8a;
@@ -20,10 +20,6 @@
             padding: 0;
             background: #f1f5f9;
             font-family: 'Montserrat', sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
         }
 
         .certificate-page {
@@ -31,117 +27,101 @@
             height: 210mm;
             background: #ffffff;
             position: relative;
-            padding: 10mm;
+            padding: 15mm;
+            margin: 0 auto;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
 
-        /* Decorative Background */
-        .certificate-page::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                radial-gradient(circle at 2px 2px, rgba(30, 58, 138, 0.03) 1px, transparent 0);
-            background-size: 24px 24px;
-            pointer-events: none;
-        }
-
+        /* Border System - Strictly contained */
         .outer-border {
             width: 100%;
             height: 100%;
-            border: 12px double var(--primary);
-            padding: 4px;
+            border: 8px solid var(--primary);
+            padding: 5px;
             position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .inner-border {
             width: 100%;
             height: 100%;
             border: 2px solid var(--border-gold);
-            padding: 30px 60px;
+            padding: 40px 60px;
             text-align: center;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
         }
 
-        /* Corner Decorations */
-        .corner {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            border: 4px solid var(--border-gold);
-        }
-        .top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-        .top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-        .bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-        .bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; }
-
-        /* Header */
+        /* Header Layout */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
-            z-index: 10;
+            margin-bottom: 20px;
         }
 
-        .logo { height: 65px; width: auto; object-fit: contain; }
-        .main-logo { height: 85px; }
+        .logo { height: 55px; width: auto; object-fit: contain; }
+        .main-logo { height: 75px; }
 
-        /* Title Styling */
+        /* Title Hierarchy */
         .certificate-title {
-            margin-top: 10px;
+            margin: 10px 0;
         }
 
         .title-main {
             font-family: 'Libre Baskerville', serif;
-            font-size: 68px;
+            font-size: 82px;
             font-weight: 700;
             color: var(--primary);
             margin: 0;
-            letter-spacing: 4px;
+            letter-spacing: 6px;
             text-transform: uppercase;
+            line-height: 1;
         }
 
         .title-sub {
-            font-size: 14px;
+            font-size: 16px;
             color: var(--accent);
-            letter-spacing: 8px;
+            letter-spacing: 10px;
             font-weight: 700;
-            margin-top: 5px;
+            margin-top: 15px;
             text-transform: uppercase;
         }
 
-        /* Body Content */
-        .content-section {
-            margin: 20px 0;
+        /* Recipient Section */
+        .recipient-section {
+            margin: 30px 0;
         }
 
         .presented-to {
-            font-size: 20px;
+            font-size: 22px;
             color: var(--text-light);
             font-style: italic;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .recipient-name {
             font-family: 'Great Vibes', cursive;
-            font-size: 72px;
+            font-size: 84px;
             color: var(--text-dark);
-            margin: 10px 0;
-            border-bottom: 2px solid rgba(212, 175, 55, 0.3);
+            margin: 5px 0;
+            padding: 0 50px;
             display: inline-block;
-            padding: 0 40px;
+            border-bottom: 2px solid var(--border-gold);
         }
 
+        /* Achievement Text */
         .achievement-text {
-            font-size: 18px;
+            font-size: 19px;
             line-height: 1.8;
             color: var(--text-dark);
-            max-width: 850px;
-            margin: 20px auto;
+            max-width: 900px;
+            margin: 25px auto;
+            font-weight: 400;
         }
 
         .achievement-text strong {
@@ -149,19 +129,22 @@
             font-weight: 700;
         }
 
-        /* Footer */
+        /* Footer Alignment */
         .footer {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 30px;
+            margin-top: 20px;
+            padding: 0 10px;
         }
 
-        .verification-block {
+        /* QR Section - Contained in Corner */
+        .qr-section {
             text-align: left;
             display: flex;
             align-items: center;
             gap: 15px;
+            padding-bottom: 5px;
         }
 
         .qr-code {
@@ -172,93 +155,93 @@
             background: #fff;
         }
 
-        .verify-info {
+        .verify-text {
             font-size: 11px;
             color: var(--text-light);
             line-height: 1.5;
         }
 
-        .verify-id {
-            font-family: monospace;
-            font-weight: 700;
+        .verify-text b {
             color: var(--primary);
             font-size: 13px;
+            display: block;
+            margin-bottom: 2px;
         }
 
-        .signature-block {
+        .credential-id {
+            font-family: monospace;
+            font-weight: 700;
+            font-size: 12px;
+        }
+
+        /* Signature Section - Strictly Contained */
+        .signature-section {
             text-align: center;
-            width: 220px;
+            width: 240px;
             position: relative;
+            padding-bottom: 5px;
         }
 
-        .certificate-stamp {
+        .authority-stamp {
             position: absolute;
-            bottom: 40px;
+            bottom: 50px;
             left: 50%;
             transform: translateX(-50%);
-            height: 100px;
-            opacity: 0.7;
+            height: 110px;
+            opacity: 0.9;
             pointer-events: none;
             z-index: 1;
         }
 
         .signature-line {
-            border-top: 2px solid var(--text-dark);
-            margin-bottom: 10px;
+            border-top: 2.5px solid var(--text-dark);
+            margin-bottom: 12px;
             position: relative;
             z-index: 2;
         }
 
-        .signer-name {
-            font-weight: 700;
-            font-size: 16px;
-            color: var(--text-dark);
+        .authority-name {
+            font-weight: 800;
+            font-size: 18px;
+            color: var(--primary);
+            font-family: 'Poppins', sans-serif;
+            text-transform: uppercase;
+            margin-bottom: 4px;
         }
 
-        .signer-title {
+        .authority-role {
             font-size: 12px;
             color: var(--text-light);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
 
-        /* Watermark */
-        .watermark-seal {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            opacity: 0.04;
-            width: 450px;
-            pointer-events: none;
-            z-index: 0;
+        @media print {
+            .certificate-page { box-shadow: none; margin: 0; }
         }
     </style>
 </head>
 <body>
     <div class="certificate-page">
         <div class="outer-border">
-            <div class="corner top-left"></div>
-            <div class="corner top-right"></div>
-            <div class="corner bottom-left"></div>
-            <div class="corner bottom-right"></div>
-            
             <div class="inner-border">
-                <!-- Header -->
+                
+                <!-- Header Logos -->
                 <div class="header">
                     <img src="{{msmeLogo}}" class="logo" alt="MSME">
                     <img src="{{companyLogo}}" class="logo main-logo" alt="CodeOrbit">
                     <img src="{{aicteLogo}}" class="logo" alt="AICTE">
                 </div>
 
-                <!-- Title -->
+                <!-- Main Title -->
                 <div class="certificate-title">
                     <h1 class="title-main">Certificate</h1>
                     <div class="title-sub">of Internship Completion</div>
                 </div>
 
-                <!-- Content -->
-                <div class="content-section">
+                <!-- Recipient Info -->
+                <div class="recipient-section">
                     <div class="presented-to">This certificate is proudly presented to</div>
                     <div class="recipient-name">{{name}}</div>
                     
@@ -271,29 +254,27 @@
                     </p>
                 </div>
 
-                <!-- Footer -->
+                <!-- Footer with QR and Signature -->
                 <div class="footer">
-                    <div class="verification-block">
+                    <div class="qr-section">
                         <img src="{{qrCode}}" class="qr-code" alt="Verification QR">
-                        <div class="verify-info">
-                            Verify this document at:<br>
-                            <strong>verify.codeorbit.in</strong><br>
-                            Credential ID: <span class="verify-id">{{verificationId}}</span>
+                        <div class="verify-text">
+                            <b>Verify Authenticity</b>
+                            verify.codeorbit.in<br>
+                            ID: <span class="credential-id">{{verificationId}}</span>
                         </div>
                     </div>
 
-                    <div class="signature-block">
-                        <img src="{{companyStamp}}" class="certificate-stamp" alt="">
+                    <div class="signature-section">
+                        <img src="{{companyStamp}}" class="authority-stamp" alt="Stamp">
                         <div class="signature-line"></div>
-                        <div class="signer-name">Tejas Date</div>
-                        <div class="signer-title">Co-Founder & CEO</div>
+                        <div class="authority-name">Tejas Date</div>
+                        <div class="authority-role">Co-Founder & CEO</div>
                     </div>
                 </div>
+
             </div>
         </div>
-        
-        <!-- Subtle Seal/Watermark -->
-        <img src="{{companyLogo}}" class="watermark-seal" alt="">
     </div>
 </body>
 </html>

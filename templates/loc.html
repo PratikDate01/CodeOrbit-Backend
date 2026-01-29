@@ -3,33 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@700;800&family=Libre+Baskerville:wght@700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap');
 
         :root {
             --navy: #1e3a8a;
             --slate: #475569;
             --gold: #b45309;
+            --dark: #0f172a;
         }
 
-        * { box-sizing: border-box; }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
         
         body { 
             font-family: 'Inter', sans-serif; 
-            line-height: 1.6; 
-            color: #1e293b; 
-            margin: 0;
-            padding: 0;
-            background: #fff;
+            -webkit-font-smoothing: antialiased;
+            background: #f1f5f9;
         }
 
         .page {
-            padding: 25mm 20mm;
             width: 210mm;
-            min-height: 297mm;
+            height: 297mm;
+            padding: 20mm 20mm;
             margin: 0 auto;
             position: relative;
             background: #fff;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
 
         /* Watermark */
@@ -38,209 +43,270 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%) rotate(-35deg);
-            font-size: 130px;
-            font-weight: 900;
-            color: rgba(30, 58, 138, 0.02);
-            z-index: -1;
+            font-size: 85px;
+            font-weight: 800;
+            font-family: 'Poppins', sans-serif;
+            color: rgba(30, 58, 138, 0.06); /* 6% Opacity */
+            z-index: 0;
             white-space: nowrap;
             pointer-events: none;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
-        /* Top Header */
+        /* Header Layout */
         .header-logos {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 5px;
+            margin-bottom: 12px;
+            position: relative;
+            z-index: 10;
         }
 
-        .logo-img { height: 65px; width: auto; object-fit: contain; }
-        .msme-logo { height: 50px; }
+        .logo-img { height: 50px; width: auto; object-fit: contain; }
+        .msme-logo { height: 40px; }
 
-        .divider {
-            border-top: 2px solid var(--navy);
-            margin: 8px 0;
+        .header-divider {
+            height: 2px;
+            background: var(--navy);
+            margin-bottom: 15px;
+            border-radius: 2px;
         }
 
-        /* Meta Info */
-        .meta-date {
-            font-size: 13px;
+        .meta-grid {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .meta-left {
+            font-size: 11.5px;
             color: var(--slate);
             font-weight: 600;
-            margin: 15px 0;
+            line-height: 1.6;
+        }
+
+        .meta-left span { color: var(--navy); font-weight: 700; }
+
+        .meta-right {
+            text-align: right;
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--slate);
+        }
+
+        .meta-right strong { 
+            color: var(--navy); 
+            font-size: 14px; 
+            font-family: 'Poppins', sans-serif; 
+            display: block; 
+            margin-bottom: 2px; 
+        }
+
+        /* Content Sections */
+        .doc-body {
+            position: relative;
+            z-index: 10;
+            margin-top: 20px;
+        }
+
+        .salutation {
+            font-family: 'Poppins', sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
             text-align: left;
         }
 
-        .company-header-block {
-            text-align: center;
-            font-size: 13px;
-            color: var(--slate);
-            margin-bottom: 15px;
-            line-height: 1.5;
-        }
-
-        .company-header-block strong { color: var(--navy); font-size: 15px; }
-
-        /* Document Title */
-        .salutation {
-            font-family: 'Libre Baskerville', serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--navy);
-            margin-top: 40px;
-            letter-spacing: 1px;
-        }
-
-        .subject-title {
-            font-family: 'Montserrat', sans-serif;
+        .subject-line {
+            font-family: 'Poppins', sans-serif;
             font-size: 14px;
-            font-weight: 800;
+            font-weight: 700;
             color: var(--gold);
-            margin-top: 8px;
             margin-bottom: 35px;
             text-transform: uppercase;
             border-bottom: 2px solid var(--gold);
             display: inline-block;
-            padding-bottom: 2px;
+            padding-bottom: 4px;
         }
 
-        /* Body Content */
         .content {
-            font-size: 14.5px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #334155;
             text-align: justify;
         }
 
-        .content p { margin-bottom: 22px; }
+        .content p { margin-bottom: 20px; }
 
         .highlight { color: var(--navy); font-weight: 700; }
 
-        /* Footer Layout */
+        /* Footer Area */
+        .spacer { flex-grow: 1; }
+
         .footer {
-            margin-top: 60px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding-top: 20px;
+            position: relative;
+            z-index: 10;
         }
 
-        /* QR Section */
-        .qr-section {
+        .qr-container {
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            font-size: 11px;
-            color: var(--slate);
+            gap: 10px;
             max-width: 320px;
         }
 
-        .qr-img {
-            width: 85px;
-            height: 85px;
-            border: 1px solid #e2e8f0;
+        .qr-code {
+            width: 80px;
+            height: 80px;
             padding: 5px;
+            border: 1.5px solid #f1f5f9;
             background: #fff;
-            margin-bottom: 5px;
         }
 
-        .verify-text b { color: var(--navy); display: block; margin-bottom: 2px; }
+        .verify-info {
+            font-size: 10px;
+            color: var(--slate);
+            line-height: 1.4;
+        }
+
+        .verify-info strong { color: var(--navy); font-size: 12px; display: block; margin-bottom: 2px; }
 
         .disclaimer {
-            font-size: 9px;
+            font-size: 8.5px;
             color: #64748b;
             font-style: italic;
             line-height: 1.3;
             margin-top: 5px;
         }
 
-        /* Signature Section */
-        .signature-section {
+        .signature-area {
             text-align: center;
-            width: 200px;
+            width: 190px;
             position: relative;
         }
 
-        .stamp {
+        .stamp-img {
             position: absolute;
             bottom: 45px;
             left: 50%;
             transform: translateX(-50%);
-            height: 110px;
-            opacity: 0.7;
+            height: 100px;
+            opacity: 0.85;
             pointer-events: none;
+            z-index: 1;
+        }
+
+        .sig-line {
+            border-top: 2px solid var(--dark);
+            margin-top: 15px;
+            padding-top: 6px;
+            position: relative;
+            z-index: 2;
         }
 
         .sig-name {
-            font-weight: 700;
-            font-size: 17px;
+            font-weight: 800;
+            font-size: 16px;
             color: var(--navy);
-            padding-top: 8px;
-            margin-top: 15px;
+            text-transform: uppercase;
+            font-family: 'Poppins', sans-serif;
         }
 
         .sig-role {
             font-size: 11px;
             color: var(--slate);
-            text-transform: uppercase;
             font-weight: 700;
             letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        @media print {
+            body { background: #fff; }
+            .page { box-shadow: none; margin: 0; }
         }
     </style>
 </head>
 <body>
     <div class="page">
-        <div class="watermark">CODEORBIT</div>
+        <!-- Watermark Layer -->
+        <div class="watermark">CodeOrbit Solutions</div>
         
-        <div class="header-logos">
-            <img src="{{companyLogo}}" class="logo-img" alt="CodeOrbit">
-            <img src="{{msmeLogo}}" class="logo-img msme-logo" alt="MSME">
-            <img src="{{aicteLogo}}" class="logo-img" alt="AICTE">
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="meta-date">Date: <span class="highlight">{{date}}</span></div>
-
-        <div class="company-header-block">
-            <strong>CodeOrbit Solutions</strong><br>
-            Whitehouse Vadgaon BK Pune 411041<br>
-            codeorbit.internship@gmail.com | www.codeorbit.in
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="salutation">TO WHOMSOEVER IT MAY CONCERN</div>
-        <div class="subject-title">SUBJECT: INTERNSHIP COMPLETION LETTER</div>
-
-        <div class="content">
-            <p>This is to certify that <span class="highlight">{{name}}</span> has successfully completed a professional internship program at <span class="highlight">CodeOrbit Solutions</span> in the domain of <span class="highlight">{{role}}</span>.</p>
+        <!-- Header -->
+        <header>
+            <div class="header-logos">
+                <img src="{{companyLogo}}" class="logo-img" alt="CodeOrbit">
+                <img src="{{msmeLogo}}" class="logo-img msme-logo" alt="MSME">
+                <img src="{{aicteLogo}}" class="logo-img" alt="AICTE">
+            </div>
+            <div class="header-divider"></div>
             
-            <p>The internship tenure was from <span class="highlight">{{startDate}}</span> to <span class="highlight">{{endDate}}</span>. During this period, <span class="highlight">{{name}}</span> worked on various live projects, demonstrating technical competence, learning agility, and a strong professional work ethic.</p>
-            
-            <p>Their contributions were significant to our project's success, and they consistently met all deadlines with high-quality deliverables. We found <span class="highlight">{{name}}</span> to be inquisitive, hard-working, and a great team player.</p>
-            
-            <p>We wish <span class="highlight">{{name}}</span> the very best for all future professional endeavors.</p>
-        </div>
+            <div class="meta-grid">
+                <div class="meta-left">
+                    Date: <span class="highlight">{{date}}</span><br>
+                    Ref ID: <span style="font-family: monospace;">{{verificationId}}</span>
+                </div>
+                <div class="meta-right">
+                    <strong>CodeOrbit Solutions</strong>
+                    Whitehouse, Vadgaon BK, Pune 411041<br>
+                    codeorbit.internship@gmail.com | www.codeorbit.in
+                </div>
+            </div>
+            <div class="header-divider" style="opacity: 0.1;"></div>
+        </header>
 
-        <div class="divider" style="margin-top: 45px;"></div>
+        <!-- Document Body -->
+        <main class="doc-body">
+            <div class="salutation">TO WHOMSOEVER IT MAY CONCERN</div>
+            <div class="subject-line">Subject: Internship Completion Letter</div>
 
-        <div class="footer">
-            <div class="qr-section">
-                <img src="{{qrCode}}" class="qr-img" alt="QR">
-                <div class="verify-text">
-                    <b>Verify Authenticity</b>
-                    ID: {{verificationId}}
+            <div class="content">
+                <p>This is to certify that <span class="highlight">{{name}}</span> has successfully completed a professional internship program at <span class="highlight">CodeOrbit Solutions</span> in the domain of <span class="highlight">{{role}}</span>.</p>
+                
+                <p>The internship tenure was from <span class="highlight">{{startDate}}</span> to <span class="highlight">{{endDate}}</span>. During this period, the candidate worked on various industry-standard live projects, demonstrating exceptional technical competence, learning agility, and a strong professional work ethic.</p>
+                
+                <p>Their contributions were instrumental to the project's success, and they consistently demonstrated the ability to meet deadlines with high-quality deliverables. We found <span class="highlight">{{name}}</span> to be inquisitive, hard-working, and a valuable team player who adapts quickly to complex environments.</p>
+                
+                <p>We believe that their experience with us has prepared them for a successful career in the technology industry. We wish them the very best for all their future professional endeavors.</p>
+            </div>
+        </main>
+
+        <div class="spacer"></div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="qr-container">
+                <img src="{{qrCode}}" class="qr-code" alt="Verification QR">
+                <div class="verify-info">
+                    <strong>Verify Authenticity</strong>
+                    ID: {{verificationId}}<br>
+                    verify.codeorbit.in
                 </div>
                 <div class="disclaimer">
-                    This is a computer-generated document and does not require a physical signature.
+                    This is a computer-generated document and does not require a physical signature for digital verification.
                 </div>
             </div>
 
-            <div class="signature-section">
-                <img src="{{companyStamp}}" class="stamp" alt="">
-                <div class="sig-name">Tejas Date</div>
-                <div class="sig-role">Co-Founder & CEO</div>
+            <div class="signature-area">
+                <img src="{{companyStamp}}" class="stamp-img" alt="Company Stamp">
+                <div class="sig-line">
+                    <div class="sig-name">Tejas Date</div>
+                    <div class="sig-role">Co-Founder & CEO</div>
+                </div>
             </div>
-        </div>
+        </footer>
     </div>
 </body>
 </html>
