@@ -9,11 +9,16 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
       proxy: true,
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        if (!profile || !profile.emails || !profile.emails[0]) {
+          return done(new Error("No email found in Google profile"), null);
+        }
+
         const email = profile.emails[0].value;
-        const name = profile.displayName;
+        const name = profile.displayName || "Google User";
         const googleId = profile.id;
 
         let user = await User.findOne({ email });
@@ -34,6 +39,7 @@ passport.use(
           return done(null, user);
         }
       } catch (error) {
+        console.error("Passport Google Strategy Error:", error);
         return done(error, null);
       }
     }

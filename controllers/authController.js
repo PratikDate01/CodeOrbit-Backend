@@ -171,8 +171,8 @@ const googleCallback = async (req, res, next) => {
     const token = generateToken(user._id);
 
     // Redirect to frontend with token
-    // You can also pass other user info if needed
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    let frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    frontendUrl = frontendUrl.replace(/\/$/, ""); // Remove trailing slash if exists
     res.redirect(`${frontendUrl}/login?token=${token}`);
   } catch (error) {
     next(error);
