@@ -4,7 +4,6 @@ const passport = require("passport");
 const {
   registerUser,
   loginUser,
-  googleLogin,
   googleCallback,
   getUserProfile,
   updateUserProfile,
