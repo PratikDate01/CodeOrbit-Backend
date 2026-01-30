@@ -51,15 +51,19 @@ const generateDocuments = asyncHandler(async (req, res) => {
   const docData = {
     name: application.name,
     role: application.preferredDomain,
+    college: application.college,
     startDate: new Date(reqStartDate || application.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     endDate: new Date(reqEndDate || application.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     verificationId,
+    verificationUrl: "verify.codeorbit.in",
     qrCode: qrCodeDataUrl,
     companyLogo: getBase64Image("assets/logos/Company Logo.png"),
     aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),
     msmeLogo: getBase64Image("assets/logos/MSME LOGO.png"),
     companyStamp: getBase64Image("assets/stamps/COMPANY STAMP.png"),
+    signatoryName: "Tejas Date",
+    signatoryTitle: "CO-FOUNDER"
   };
 
   try {
