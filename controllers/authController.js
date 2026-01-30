@@ -1,5 +1,4 @@
 const jwt = require("jsonwebtoken");
-const axios = require("axios");
 const User = require("../models/User");
 
 // Generate JWT
@@ -163,56 +162,27 @@ const updateUserProfile = async (req, res, next) => {
   }
 };
 
-// @desc    Google login
-// @route   POST /api/auth/google
+// @desc    Google OAuth callback
+// @route   GET /api/auth/google/callback
 // @access  Public
-const googleLogin = async (req, res, next) => {
+const googleCallback = async (req, res, next) => {
   try {
-    const { tokenId: accessToken } = req.body;
+    const user = req.user;
+    const token = generateToken(user._id);
 
-    // Fetch user info from Google using access token
-    const { data } = await axios.get(
-      `https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`
-    );
-
-    const { name, email, sub: googleId } = data;
-
-    let user = await User.findOne({ email });
-
-    if (user) {
-      if (!user.googleId) {
-        user.googleId = googleId;
-        await user.save();
-      }
-    } else {
-      user = await User.create({
-        name,
-        email,
-        googleId,
-        role: email === process.env.ADMIN_EMAIL ? "admin" : "client",
-      });
-    }
-
-    res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      phone: user.phone,
-      education: user.education,
-      skills: user.skills,
-      token: generateToken(user._id),
-    });
-  } catch {
-    res.status(400);
-    next(new Error("Google authentication failed"));
+    // Redirect to frontend with token
+    // You can also pass other user info if needed
+    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    res.redirect(`${frontendUrl}/login?token=${token}`);
+  } catch (error) {
+    next(error);
   }
 };
 
 module.exports = {
   registerUser,
   loginUser,
-  googleLogin,
+  googleCallback,
   getUserProfile,
   updateUserProfile,
 };

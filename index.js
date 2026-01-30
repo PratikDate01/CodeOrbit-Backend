@@ -8,7 +8,9 @@ const path = require("path");
 const mongoSanitize = require("express-mongo-sanitize");
 const xss = require("xss-clean");
 const hpp = require("hpp");
+const passport = require("passport");
 const connectDB = require("./config/db");
+require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter, contactLimiter, authLimiter } = require("./middleware/rateLimiter");
 
@@ -52,6 +54,7 @@ app.use(cors({
 // 2. Core Parsers
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(passport.initialize());
 
 // 3. Security & Optimization Middleware
 app.use(helmet({
@@ -97,6 +100,7 @@ app.use("/api/payments", authLimiter);
 app.use("/api/contact", require("./routes/contactRoutes"));
 app.use("/api/internships", require("./routes/internshipRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/auth", require("./routes/authRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
