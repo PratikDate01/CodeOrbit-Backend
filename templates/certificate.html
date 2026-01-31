@@ -30,18 +30,39 @@
             width: 297mm;
             height: 210mm;
             background: white;
-            padding: 25px;
-            border: 15px solid #1e3a8a;
+            padding: 20px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 10px solid #1e3a8a;
         }
 
         .certificate-inner {
-            border: 3px solid #1e3a8a;
-            padding: 40px 60px;
+            border: 2px solid #1e3a8a;
+            padding: 30px 50px;
             position: relative;
             background: white;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 120px;
+            font-weight: bold;
+            color: rgba(30, 58, 138, 0.03);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
         }
 
         /* Header logos */
@@ -49,85 +70,91 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            height: 60px;
-            width: auto;
+            margin-bottom: 20px;
+            z-index: 1;
         }
 
         .logo-left {
-            max-width: 180px;
+            height: 90px;
+            width: auto;
         }
 
         .logo-center {
-            max-width: 130px;
+            height: 100px;
+            width: auto;
         }
 
         .logo-right {
-            max-width: 130px;
+            height: 90px;
+            width: auto;
         }
 
         /* Certificate title */
-        .certificate-title {
+        .certificate-title-section {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            z-index: 1;
         }
 
-        .certificate-title h1 {
-            font-size: 58px;
+        .certificate-title-section h1 {
+            font-size: 64px;
             font-weight: bold;
             color: #1e3a8a;
-            letter-spacing: 8px;
-            margin-bottom: 5px;
+            letter-spacing: 12px;
+            margin-bottom: 0px;
+            text-transform: uppercase;
         }
 
         .certificate-subtitle {
             text-align: center;
-            font-size: 18px;
-            letter-spacing: 8px;
-            color: #64748b;
+            font-size: 20px;
+            letter-spacing: 6px;
+            color: #475569;
             text-transform: uppercase;
-            margin-bottom: 30px;
+            font-weight: bold;
         }
 
         /* Presented to text */
         .presented-to {
             text-align: center;
-            font-size: 20px;
+            font-size: 22px;
             font-style: italic;
             color: #64748b;
-            margin-bottom: 25px;
+            margin-top: 15px;
+            z-index: 1;
         }
 
         /* Recipient name */
         .recipient-name {
             text-align: center;
-            margin-bottom: 35px;
+            margin: 15px 0;
+            z-index: 1;
         }
 
         .recipient-name h2 {
-            font-size: 52px;
+            font-size: 56px;
             font-weight: bold;
             color: #000;
-            border-bottom: 2px solid #cbd5e1;
             display: inline-block;
-            padding-bottom: 10px;
+            padding: 0 40px 5px;
+            border-bottom: 3px double #1e3a8a;
+            font-family: 'Times New Roman', serif;
         }
 
         /* Certificate content */
         .certificate-content {
             text-align: center;
-            font-size: 16px;
-            line-height: 1.7;
+            font-size: 18px;
+            line-height: 1.6;
             color: #334155;
-            margin-bottom: 40px;
+            max-width: 850px;
+            margin: 0 auto 20px;
+            z-index: 1;
         }
 
         .certificate-content strong {
             color: #1e3a8a;
-            font-weight: 600;
+            font-weight: bold;
         }
 
         /* Footer section */
@@ -135,49 +162,76 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 40px;
+            margin-top: auto;
+            z-index: 1;
         }
 
         /* QR Code section */
         .qr-section {
             text-align: left;
+            background: #f8fafc;
+            padding: 12px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .qr-code {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 10px;
-            border: 2px solid #e2e8f0;
+            width: 80px;
+            height: 80px;
+            display: block;
         }
 
-        .verification-info {
+        .verification-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .verify-label {
             font-size: 11px;
-            color: #64748b;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 2px;
+        }
+
+        .verify-url {
+            font-size: 10px;
+            color: #1e3a8a;
+            margin-bottom: 4px;
         }
 
         .certificate-id {
-            font-size: 12px;
-            color: #1e3a8a;
-            font-weight: 600;
-            margin-top: 5px;
+            font-size: 10px;
+            color: #666;
+            font-family: monospace;
+            background: #fff;
+            padding: 2px 5px;
+            border: 1px solid #e2e8f0;
         }
 
         /* Signature section */
         .signature-section {
-            text-align: right;
+            text-align: center;
+            min-width: 220px;
         }
 
         .stamp {
             width: 100px;
             height: 100px;
-            margin-bottom: 10px;
+            margin-bottom: -30px;
             margin-left: auto;
+            margin-right: auto;
+            position: relative;
+            z-index: 2;
+            opacity: 0.9;
         }
 
         .signature-line {
-            width: 230px;
+            width: 220px;
             border-top: 2px solid #000;
-            margin-bottom: 10px;
+            margin: 0 auto 8px;
         }
 
         .signatory-name {
@@ -188,10 +242,11 @@
         }
 
         .signatory-title {
-            font-size: 13px;
-            color: #64748b;
+            font-size: 11px;
+            color: #1e3a8a;
             text-transform: uppercase;
             letter-spacing: 2px;
+            font-weight: bold;
         }
 
         @media print {
@@ -209,26 +264,25 @@
 </head>
 <body>
     <div class="certificate-container">
+        <!-- Watermark -->
+        <div class="watermark">CODEORBIT</div>
+
         <div class="certificate-inner">
             <!-- Header Logos -->
             <div class="header-logos">
-                <img src="{{msmeLogo}}" alt="Ministry Logo" class="logo logo-left">
-                <img src="{{companyLogo}}" alt="CodeOrbit Solutions" class="logo logo-center">
-                <img src="{{aicteLogo}}" alt="AICTE Logo" class="logo logo-right">
+                <img src="{{msmeLogo}}" alt="Ministry Logo" class="logo-left">
+                <img src="{{companyLogo}}" alt="CodeOrbit Solutions" class="logo-center">
+                <img src="{{aicteLogo}}" alt="AICTE Logo" class="logo-right">
             </div>
 
             <!-- Certificate Title -->
-            <div class="certificate-title">
+            <div class="certificate-title-section">
                 <h1>CERTIFICATE</h1>
-            </div>
-            <div class="certificate-subtitle">
-                OF INTERNSHIP COMPLETION
+                <div class="certificate-subtitle">OF INTERNSHIP COMPLETION</div>
             </div>
 
             <!-- Presented To -->
-            <div class="presented-to">
-                This certificate is proudly presented to
-            </div>
+            <div class="presented-to">This certificate is proudly presented to</div>
 
             <!-- Recipient Name -->
             <div class="recipient-name">
@@ -249,8 +303,11 @@
                 <!-- QR Code Section -->
                 <div class="qr-section">
                     <img src="{{qrCode}}" alt="Verification QR Code" class="qr-code">
-                    <div class="verification-info">verify.codeorbit.in</div>
-                    <div class="certificate-id">ID: {{verificationId}}</div>
+                    <div class="verification-details">
+                        <div class="verify-label">Verify Authenticity</div>
+                        <div class="verify-url">verify.codeorbit.in</div>
+                        <div class="certificate-id">ID: {{verificationId}}</div>
+                    </div>
                 </div>
 
                 <!-- Signature Section -->

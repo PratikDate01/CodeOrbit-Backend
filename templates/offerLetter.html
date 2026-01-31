@@ -28,11 +28,29 @@
 
         .letter-container {
             width: 210mm;
-            min-height: 297mm;
+            height: 297mm;
             background: white;
-            padding: 40px 50px;
+            padding: 40px 60px;
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
             position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Watermark */
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100px;
+            font-weight: bold;
+            color: rgba(30, 58, 138, 0.05);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 0;
+            user-select: none;
         }
 
         /* Header Section */
@@ -40,23 +58,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 15px;
-            border-bottom: 3px solid #1e3a8a;
-            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #1e3a8a;
+            margin-bottom: 20px;
+            z-index: 1;
         }
 
         .logo-left {
-            height: 70px;
+            height: 100px;
             width: auto;
         }
 
         .logo-center {
-            height: 50px;
+            height: 80px;
             width: auto;
         }
 
         .logo-right {
-            height: 70px;
+            height: 100px;
             width: auto;
         }
 
@@ -65,8 +84,9 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 35px;
-            font-size: 13px;
+            margin-bottom: 25px;
+            font-size: 12px;
+            z-index: 1;
         }
 
         .ref-date-left {
@@ -74,7 +94,7 @@
         }
 
         .ref-date-left div {
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .ref-label,
@@ -84,35 +104,39 @@
 
         .company-info {
             text-align: right;
-            line-height: 1.6;
+            line-height: 1.4;
         }
 
         .company-name {
             font-weight: bold;
-            color: #000;
-            margin-bottom: 3px;
+            color: #1e3a8a;
+            margin-bottom: 2px;
+            font-size: 14px;
         }
 
         .company-address,
         .company-contact {
             color: #333;
-            font-size: 12px;
+            font-size: 11px;
         }
 
         /* Title */
         .letter-title {
             text-align: center;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
             color: #1e3a8a;
-            margin-bottom: 30px;
-            letter-spacing: 2px;
+            margin-bottom: 25px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            z-index: 1;
         }
 
         /* To Section */
         .to-section {
-            margin-bottom: 25px;
-            font-size: 14px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            z-index: 1;
         }
 
         .to-label {
@@ -124,13 +148,15 @@
         .to-name {
             font-weight: bold;
             color: #000;
+            font-size: 15px;
         }
 
         /* Greeting */
         .greeting {
-            font-size: 14px;
-            margin-bottom: 20px;
+            font-size: 13px;
+            margin-bottom: 15px;
             color: #000;
+            z-index: 1;
         }
 
         .greeting-name {
@@ -139,15 +165,17 @@
 
         /* Letter Content */
         .content {
-            font-size: 14px;
-            line-height: 1.7;
+            font-size: 13px;
+            line-height: 1.6;
             color: #000;
             text-align: justify;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            z-index: 1;
+            flex-grow: 1;
         }
 
         .content p {
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
 
         .content strong {
@@ -157,19 +185,21 @@
         /* Terms Section */
         .terms-heading {
             font-weight: bold;
-            margin-bottom: 12px;
-            font-size: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #1e3a8a;
         }
 
         .terms-list {
             margin-left: 20px;
-            margin-bottom: 18px;
+            margin-bottom: 15px;
+            list-style-type: square;
         }
 
         .terms-list li {
-            margin-bottom: 8px;
-            line-height: 1.6;
-            font-size: 14px;
+            margin-bottom: 5px;
+            line-height: 1.5;
+            font-size: 13px;
         }
 
         .terms-list strong {
@@ -178,9 +208,9 @@
 
         /* Closing */
         .closing {
-            font-size: 14px;
-            line-height: 1.7;
-            margin-bottom: 18px;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 12px;
         }
 
         /* Footer Section */
@@ -188,70 +218,83 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            margin-top: 100px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            z-index: 1;
         }
 
         /* QR Code Section */
         .qr-section {
             text-align: left;
-        }
-
-        .qr-code {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 8px;
+            background: #f8fafc;
+            padding: 10px;
+            border-radius: 4px;
             border: 1px solid #e2e8f0;
         }
 
+        .qr-code {
+            width: 70px;
+            height: 70px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
         .verify-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #000;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
         }
 
         .verify-url {
-            font-size: 10px;
+            font-size: 9px;
             color: #1e3a8a;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .certificate-id {
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
+            font-family: monospace;
         }
 
         /* Signature Section */
         .signature-section {
             text-align: center;
+            min-width: 180px;
         }
 
         .stamp {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 5px;
+            width: 90px;
+            height: 90px;
+            margin-bottom: -20px;
             margin-left: auto;
             margin-right: auto;
+            position: relative;
+            z-index: 2;
+            opacity: 0.9;
         }
 
         .signature-line {
-            width: 200px;
+            width: 180px;
             border-top: 2px solid #000;
-            margin: 0 auto 8px;
+            margin: 0 auto 5px;
         }
 
         .signatory-name {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
             color: #000;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .signatory-title {
-            font-size: 12px;
-            color: #666;
+            font-size: 10px;
+            color: #1e3a8a;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-weight: bold;
         }
 
         @media print {
@@ -269,6 +312,9 @@
 </head>
 <body>
     <div class="letter-container">
+        <!-- Watermark -->
+        <div class="watermark">CODEORBIT</div>
+
         <!-- Header with Logos -->
         <div class="header">
             <img src="{{companyLogo}}" alt="CodeOrbit Logo" class="logo-left">
