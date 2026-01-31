@@ -5,357 +5,366 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Internship Offer Letter</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap');
-
-        :root {
-            --navy: #1e3a8a;
-            --slate: #475569;
-            --gold: #b45309;
-            --dark: #0f172a;
+        @page {
+            size: A4 portrait;
+            margin: 0;
         }
 
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-        }
-        
-        body { 
-            font-family: 'Inter', sans-serif; 
-            -webkit-font-smoothing: antialiased;
-            background: #f1f5f9;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .page {
-            width: 210mm;
-            height: 297mm;
-            padding: 20mm 20mm;
-            margin: 0 auto;
-            position: relative;
-            background: #fff;
-            overflow: hidden;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
             display: flex;
-            flex-direction: column;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        /* Watermark */
-        .watermark {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotate(-35deg);
-            font-size: 85px;
-            font-weight: 800;
-            font-family: 'Poppins', sans-serif;
-            color: rgba(30, 58, 138, 0.06); /* 6% Opacity */
-            z-index: 0;
-            white-space: nowrap;
-            pointer-events: none;
-            letter-spacing: 2px;
-            text-transform: uppercase;
+        .letter-container {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            padding: 40px 50px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
 
-        /* Header Layout */
-        .header-logos {
+        /* Header Section */
+        .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
-            position: relative;
-            z-index: 10;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #1e3a8a;
+            margin-bottom: 25px;
         }
 
-        .logo-img { height: 50px; width: auto; object-fit: contain; }
-        .msme-logo { height: 40px; }
-
-        .header-divider {
-            height: 2px;
-            background: var(--navy);
-            margin-bottom: 15px;
-            border-radius: 2px;
+        .logo-left {
+            height: 70px;
+            width: auto;
         }
 
-        .meta-grid {
+        .logo-center {
+            height: 50px;
+            width: auto;
+        }
+
+        .logo-right {
+            height: 70px;
+            width: auto;
+        }
+
+        /* Reference and Date Section */
+        .ref-date-section {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 30px;
-            position: relative;
-            z-index: 10;
+            margin-bottom: 35px;
+            font-size: 13px;
         }
 
-        .meta-left {
-            font-size: 11.5px;
-            color: var(--slate);
-            font-weight: 600;
+        .ref-date-left {
+            color: #000;
+        }
+
+        .ref-date-left div {
+            margin-bottom: 3px;
+        }
+
+        .ref-label,
+        .date-label {
+            font-weight: bold;
+        }
+
+        .company-info {
+            text-align: right;
             line-height: 1.6;
         }
 
-        .meta-left span { color: var(--navy); font-family: monospace; font-size: 13px; font-weight: 700; }
-
-        .meta-right {
-            text-align: right;
-            font-size: 11px;
-            line-height: 1.5;
-            color: var(--slate);
+        .company-name {
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 3px;
         }
 
-        .meta-right strong { 
-            color: var(--navy); 
-            font-size: 14px; 
-            font-family: 'Poppins', sans-serif; 
-            display: block; 
-            margin-bottom: 2px; 
+        .company-address,
+        .company-contact {
+            color: #333;
+            font-size: 12px;
         }
 
-        /* Typography & Content */
-        .doc-title {
+        /* Title */
+        .letter-title {
             text-align: center;
-            font-family: 'Poppins', sans-serif;
-            font-size: 24px;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 35px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            position: relative;
-            z-index: 10;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            letter-spacing: 2px;
         }
 
-        .recipient-info {
+        /* To Section */
+        .to-section {
             margin-bottom: 25px;
             font-size: 14px;
-            position: relative;
-            z-index: 10;
         }
 
-        .recipient-info strong {
-            display: block;
-            font-size: 17px;
-            color: var(--dark);
-            margin-top: 5px;
-            font-family: 'Poppins', sans-serif;
+        .to-label {
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 2px;
         }
 
+        .to-name {
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* Greeting */
+        .greeting {
+            font-size: 14px;
+            margin-bottom: 20px;
+            color: #000;
+        }
+
+        .greeting-name {
+            font-weight: bold;
+        }
+
+        /* Letter Content */
         .content {
-            font-size: 13.5px;
+            font-size: 14px;
             line-height: 1.7;
-            color: #334155;
+            color: #000;
             text-align: justify;
-            position: relative;
-            z-index: 10;
+            margin-bottom: 20px;
         }
 
-        .content p { margin-bottom: 18px; }
-
-        .highlight { color: var(--navy); font-weight: 700; }
-
-        /* Terms Box */
-        .terms-container {
-            margin: 25px 0;
-            padding: 15px 25px;
-            background: #f8fafc;
-            border-left: 4px solid var(--gold);
-            border-radius: 0 8px 8px 0;
+        .content p {
+            margin-bottom: 18px;
         }
 
-        .terms-title {
-            color: var(--gold);
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            display: block;
+        .content strong {
+            font-weight: bold;
+        }
+
+        /* Terms Section */
+        .terms-heading {
+            font-weight: bold;
+            margin-bottom: 12px;
+            font-size: 14px;
         }
 
         .terms-list {
-            list-style: none;
-            padding: 0;
+            margin-left: 20px;
+            margin-bottom: 18px;
         }
 
         .terms-list li {
             margin-bottom: 8px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
+            line-height: 1.6;
+            font-size: 14px;
         }
 
-        .terms-list li::before {
-            content: "";
-            width: 6px;
-            height: 6px;
-            background: var(--gold);
-            border-radius: 50%;
-            margin-right: 12px;
-            flex-shrink: 0;
+        .terms-list strong {
+            font-weight: bold;
         }
 
-        /* Footer Alignment */
-        .spacer { flex-grow: 1; }
+        /* Closing */
+        .closing {
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 18px;
+        }
 
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e2e8f0;
+        /* Footer Section */
+        .footer-section {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            position: relative;
-            z-index: 10;
+            margin-top: 100px;
         }
 
-        .qr-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
+        /* QR Code Section */
+        .qr-section {
+            text-align: left;
         }
 
         .qr-code {
             width: 80px;
             height: 80px;
-            padding: 5px;
-            border: 1.5px solid #f1f5f9;
-            background: #fff;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
         }
 
-        .verify-info {
+        .verify-label {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 2px;
+        }
+
+        .verify-url {
             font-size: 10px;
-            color: var(--slate);
-            line-height: 1.4;
+            color: #1e3a8a;
+            margin-bottom: 3px;
         }
 
-        .verify-info strong { color: var(--navy); font-size: 12px; display: block; margin-bottom: 2px; }
+        .certificate-id {
+            font-size: 10px;
+            color: #666;
+        }
 
-        .signature-area {
+        /* Signature Section */
+        .signature-section {
             text-align: center;
-            width: 180px;
-            position: relative;
         }
 
-        .stamp-img {
-            position: absolute;
-            bottom: 45px;
-            left: 50%;
-            transform: translateX(-50%);
-            height: 95px;
-            opacity: 0.8;
-            pointer-events: none;
-            z-index: 1;
+        .stamp {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 5px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .sig-line {
-            border-top: 2px solid var(--dark);
-            margin-top: 15px;
-            padding-top: 6px;
-            position: relative;
-            z-index: 2;
+        .signature-line {
+            width: 200px;
+            border-top: 2px solid #000;
+            margin: 0 auto 8px;
         }
 
-        .sig-name {
-            font-weight: 800;
-            font-size: 15px;
-            color: var(--navy);
+        .signatory-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 3px;
+        }
+
+        .signatory-title {
+            font-size: 12px;
+            color: #666;
             text-transform: uppercase;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        .sig-role {
-            font-size: 10px;
-            color: var(--slate);
-            font-weight: 700;
             letter-spacing: 1px;
-            text-transform: uppercase;
         }
 
-        /* Print optimizations */
         @media print {
-            body { background: #fff; }
-            .page { box-shadow: none; margin: 0; }
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .letter-container {
+                box-shadow: none;
+                page-break-after: avoid;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="page">
-        <!-- Watermark Layer -->
-        <div class="watermark">CodeOrbit Solutions</div>
-        
-        <!-- Header -->
-        <header>
-            <div class="header-logos">
-                <img src="{{companyLogo}}" class="logo-img" alt="CodeOrbit">
-                <img src="{{msmeLogo}}" class="logo-img msme-logo" alt="MSME">
-                <img src="{{aicteLogo}}" class="logo-img" alt="AICTE">
+    <div class="letter-container">
+        <!-- Header with Logos -->
+        <div class="header">
+            <img src="{{companyLogo}}" alt="CodeOrbit Logo" class="logo-left">
+            <img src="{{msmeLogo}}" alt="Ministry Logo" class="logo-center">
+            <img src="{{aicteLogo}}" alt="AICTE Logo" class="logo-right">
+        </div>
+
+        <!-- Reference, Date and Company Info -->
+        <div class="ref-date-section">
+            <div class="ref-date-left">
+                <div><span class="ref-label">Ref No:</span> {{verificationId}}</div>
+                <div><span class="date-label">Date:</span> {{date}}</div>
             </div>
-            <div class="header-divider"></div>
-            
-            <div class="meta-grid">
-                <div class="meta-left">
-                    Ref No: <span>{{verificationId}}</span><br>
-                    Date: {{date}}
-                </div>
-                <div class="meta-right">
-                    <strong>CodeOrbit Solutions</strong>
-                    Whitehouse, Vadgaon BK, Pune 411041<br>
+            <div class="company-info">
+                <div class="company-name">CodeOrbit Solutions</div>
+                <div class="company-address">Whitehouse, Vadgaon BK, Pune 411041</div>
+                <div class="company-contact">
                     codeorbit.internship@gmail.com | www.codeorbit.in
                 </div>
             </div>
-        </header>
-
-        <!-- Document Body -->
-        <div class="doc-title">Internship Offer Letter</div>
-
-        <div class="recipient-info">
-            To,<br>
-            <strong>{{name}}</strong>
         </div>
 
+        <!-- Letter Title -->
+        <div class="letter-title">INTERNSHIP OFFER LETTER</div>
+
+        <!-- To Section -->
+        <div class="to-section">
+            <div class="to-label">To,</div>
+            <div class="to-name">{{name}}</div>
+        </div>
+
+        <!-- Greeting -->
+        <div class="greeting">
+            Dear <span class="greeting-name">{{name}}</span>,
+        </div>
+
+        <!-- Letter Content -->
         <div class="content">
-            <p>Dear <span class="highlight">{{name}}</span>,</p>
+            <p>
+                We are pleased to offer you an internship position at <strong>CodeOrbit Solutions</strong> 
+                as a <strong>{{role}} Intern</strong>. After careful review of your credentials and interview 
+                performance, we believe your skills will be a valuable addition to our team.
+            </p>
 
-            <p>We are pleased to offer you an internship position at <span class="highlight">CodeOrbit Solutions</span> as a <span class="highlight">{{role}} Intern</span>. After careful review of your credentials and interview performance, we believe your skills will be a valuable addition to our team.</p>
+            <div class="terms-heading">Terms of Internship:</div>
+            <ul class="terms-list">
+                <li><strong>Tenure:</strong> From <strong>{{startDate}}</strong> to <strong>{{endDate}}</strong></li>
+                <li><strong>Designation:</strong> <strong>{{role}} Intern</strong></li>
+                <li><strong>Mode of Work:</strong> Remote / Online</li>
+            </ul>
 
-            <div class="terms-container">
-                <span class="terms-title">Terms of Internship:</span>
-                <ul class="terms-list">
-                    <li>Tenure: <span class="highlight">From {{startDate}} to {{endDate}}</span></li>
-                    <li>Designation: <span class="highlight">{{role}} Intern</span></li>
-                    <li>Mode of Work: <span class="highlight">Remote / Online</span></li>
-                </ul>
-            </div>
+            <p>
+                During this internship, you will work on live industry-standard projects, receive direct mentorship 
+                from our technical leads, and participate in regular team meetings. This opportunity is designed to 
+                enhance your professional technical skills and provide a real-world software development environment.
+            </p>
 
-            <p>During this internship, you will work on live industry-standard projects, receive direct mentorship from our technical leads, and participate in regular team meetings. This opportunity is designed to enhance your professional technical skills and provide a real-world software development environment.</p>
+            <p>
+                We maintain a high standard of professional ethics. You are expected to adhere to the company's code 
+                of conduct and maintain strict confidentiality regarding all company projects and data. Your performance 
+                will be monitored periodically to ensure alignment with our quality standards.
+            </p>
 
-            <p>We maintain a high standard of professional ethics. You are expected to adhere to the company's code of conduct and maintain strict confidentiality regarding all company projects and data. Your performance will be monitored periodically to ensure alignment with our quality standards.</p>
+            <p>
+                Upon successful completion of all assigned tasks and the full internship tenure, you will be awarded 
+                an <strong>Internship Completion Certificate</strong> and a <strong>Letter of Recommendation (LOR)</strong> 
+                based on your performance metrics.
+            </p>
 
-            <p>Upon successful completion of all assigned tasks and the full internship tenure, you will be awarded an <span class="highlight">Internship Completion Certificate</span> and a <span class="highlight">Letter of Recommendation (LOR)</span> based on your performance metrics.</p>
-            
-            <p style="font-weight: 600; color: var(--navy);">We look forward to a productive association with you!</p>
+            <p class="closing">
+                Please sign and return a copy of this letter to signify your acceptance of this offer.
+            </p>
+
+            <p class="closing">
+                We look forward to having you on board!
+            </p>
         </div>
 
-        <div class="spacer"></div>
-
-        <!-- Footer -->
-        <footer class="footer">
-            <div class="qr-container">
-                <img src="{{qrCode}}" class="qr-code" alt="Verification QR">
-                <div class="verify-info">
-                    <strong>Verify Authenticity</strong>
-                    Scan to verify this document<br>
-                    ID: {{verificationId}}<br>
-                    verify.codeorbit.in
-                </div>
+        <!-- Footer Section -->
+        <div class="footer-section">
+            <!-- QR Code Section -->
+            <div class="qr-section">
+                <img src="{{qrCode}}" alt="Verification QR Code" class="qr-code">
+                <div class="verify-label">Verify Authenticity</div>
+                <div class="verify-url">verify.codeorbit.in</div>
+                <div class="certificate-id">ID: {{verificationId}}</div>
             </div>
 
-            <div class="signature-area">
-                <img src="{{companyStamp}}" class="stamp-img" alt="Company Stamp">
-                <div class="sig-line">
-                    <div class="sig-name">Tejas Date</div>
-                    <div class="sig-role">Co-Founder & CEO</div>
-                </div>
+            <!-- Signature Section -->
+            <div class="signature-section">
+                <img src="{{companyStamp}}" alt="Company Stamp" class="stamp">
+                <div class="signature-line"></div>
+                <div class="signatory-name">Tejas Date</div>
+                <div class="signatory-title">CO-FOUNDER & CEO</div>
             </div>
-        </footer>
+        </div>
     </div>
 </body>
 </html>

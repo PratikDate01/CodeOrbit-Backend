@@ -1,5 +1,8 @@
 const express = require("express");
 const dotenv = require("dotenv");
+// Load env vars first!
+dotenv.config();
+
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
@@ -13,8 +16,6 @@ const connectDB = require("./config/db");
 require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter, contactLimiter, authLimiter } = require("./middleware/rateLimiter");
-
-dotenv.config();
 
 // Connect to Database
 connectDB();
