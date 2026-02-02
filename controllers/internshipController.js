@@ -1,5 +1,6 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const Document = require("../models/Document");
+const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
 const { createNotification } = require("./notificationController");
 
@@ -87,6 +88,20 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
     
     const updatedApplication = await application.save();
 
+    // Log admin action
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "UPDATE_INTERNSHIP_STATUS",
+      targetType: "InternshipApplication",
+      targetId: updatedApplication._id,
+      details: { 
+        oldStatus, 
+        newStatus: updatedApplication.status,
+        oldPaymentStatus,
+        newPaymentStatus: updatedApplication.paymentStatus 
+      },
+    });
+
     // Create notification for user if linked
     if (application.user) {
       if (oldStatus !== application.status) {
@@ -131,6 +146,15 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 
   if (application) {
     await application.deleteOne();
+
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "DELETE_INTERNSHIP_APPLICATION",
+      targetType: "InternshipApplication",
+      targetId: req.params.id,
+      details: { name: application.name, email: application.email },
+    });
+
     res.json({ message: "Application removed" });
   } else {
     res.status(404);

@@ -4,6 +4,7 @@ const {
   getStats,
   getUsers,
   deleteUser,
+  getAuditLogs,
 } = require("../controllers/adminController");
 const {
   createCoupon,
@@ -21,6 +22,7 @@ router.use(admin);
 router.get("/stats", getStats);
 router.get("/users", getUsers);
 router.delete("/users/:id", deleteUser);
+router.get("/audit-logs", getAuditLogs);
 
 // Coupon routes
 router.route("/coupons")

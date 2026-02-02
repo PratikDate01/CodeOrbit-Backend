@@ -1,5 +1,6 @@
 const Coupon = require("../models/Coupon");
 const CouponUsage = require("../models/CouponUsage");
+const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
 
 // @desc    Create a new coupon
@@ -34,6 +35,14 @@ const createCoupon = asyncHandler(async (req, res) => {
     status,
     applicablePlans,
     createdBy: req.user._id,
+  });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "CREATE_COUPON",
+    targetType: "Coupon",
+    targetId: coupon._id,
+    details: { code: coupon.code, discountValue: coupon.discountValue },
   });
 
   res.status(201).json(coupon);
@@ -78,6 +87,15 @@ const updateCoupon = asyncHandler(async (req, res) => {
     coupon.applicablePlans = req.body.applicablePlans || coupon.applicablePlans;
 
     const updatedCoupon = await coupon.save();
+
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "UPDATE_COUPON",
+      targetType: "Coupon",
+      targetId: updatedCoupon._id,
+      details: { code: updatedCoupon.code },
+    });
+
     res.json(updatedCoupon);
   } else {
     res.status(404);
@@ -93,6 +111,15 @@ const deleteCoupon = asyncHandler(async (req, res) => {
 
   if (coupon) {
     await coupon.deleteOne();
+
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "DELETE_COUPON",
+      targetType: "Coupon",
+      targetId: req.params.id,
+      details: { code: coupon.code },
+    });
+
     res.json({ message: "Coupon removed" });
   } else {
     res.status(404);

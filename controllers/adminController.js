@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const InternshipApplication = require("../models/InternshipApplication");
 const Contact = require("../models/Contact");
+const AuditLog = require("../models/AuditLog");
 
 // @desc    Get admin stats
 // @route   GET /api/admin/stats
@@ -89,6 +90,15 @@ const deleteUser = async (req, res, next) => {
         throw new Error("Cannot delete admin user");
       }
       await user.deleteOne();
+
+      await AuditLog.create({
+        admin: req.user._id,
+        actionType: "DELETE_USER",
+        targetType: "User",
+        targetId: req.params.id,
+        details: { name: user.name, email: user.email },
+      });
+
       res.json({ message: "User removed" });
     } else {
       res.status(404);
@@ -99,8 +109,36 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+// @desc    Get audit logs
+// @route   GET /api/admin/audit-logs
+// @access  Private/Admin
+const getAuditLogs = async (req, res, next) => {
+  try {
+    const { page = 1, limit = 50 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const logs = await AuditLog.find()
+      .populate("admin", "name email")
+      .sort({ timestamp: -1 })
+      .limit(Number(limit))
+      .skip(skip);
+
+    const total = await AuditLog.countDocuments();
+
+    res.json({
+      logs,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+      total,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getStats,
   getUsers,
   deleteUser,
+  getAuditLogs,
 };
