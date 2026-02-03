@@ -3,6 +3,7 @@ const Document = require("../models/Document");
 const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
 const { createNotification } = require("./notificationController");
+const { autoEnrollUser } = require("../utils/lmsHelpers");
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -87,6 +88,18 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
     application.endDate = req.body.endDate || application.endDate;
     
     const updatedApplication = await application.save();
+
+    // Trigger LMS enrollment if application is Approved or Selected
+    if (
+      (updatedApplication.status === "Approved" || updatedApplication.status === "Selected") &&
+      updatedApplication.user
+    ) {
+      await autoEnrollUser(
+        updatedApplication.user,
+        updatedApplication.preferredDomain,
+        updatedApplication._id
+      );
+    }
 
     // Log admin action
     await AuditLog.create({

@@ -38,10 +38,25 @@ const admin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
     next();
   } else {
-    res.status(401);
+    res.status(403);
     const err = new Error("Not authorized as an admin");
     next(err);
   }
 };
 
-module.exports = { protect, admin };
+const staff = (req, res, next) => {
+  if (
+    req.user &&
+    (req.user.role === "admin" ||
+      req.user.role === "instructor" ||
+      req.user.role === "moderator")
+  ) {
+    next();
+  } else {
+    res.status(403);
+    const err = new Error("Not authorized as staff");
+    next(err);
+  }
+};
+
+module.exports = { protect, admin, staff };

@@ -15,7 +15,7 @@ const passport = require("passport");
 const connectDB = require("./config/db");
 require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
-const { apiLimiter, contactLimiter, authLimiter } = require("./middleware/rateLimiter");
+const { apiLimiter, authLimiter, contactLimiter } = require("./middleware/rateLimiter");
 
 // Connect to Database
 connectDB();
@@ -98,12 +98,14 @@ app.get("/api/ping", (req, res) => res.status(200).send("pong"));
 app.use("/api/auth", authLimiter);
 app.use("/api/payments", authLimiter);
 
-app.use("/api/contact", require("./routes/contactRoutes"));
+app.use("/api/contact", contactLimiter, require("./routes/contactRoutes"));
 app.use("/api/internships", require("./routes/internshipRoutes"));
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/auth", require("./routes/authRoutes"));
 app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
+app.use("/api/admin/lms", require("./routes/lmsAdminRoutes"));
+app.use("/api/lms", require("./routes/lmsStudentRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
@@ -127,6 +129,10 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;

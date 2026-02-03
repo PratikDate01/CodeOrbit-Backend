@@ -1,5 +1,5 @@
+const nodeCrypto = require("crypto");
 const Razorpay = require("razorpay");
-const crypto = require("crypto");
 const InternshipApplication = require("../models/InternshipApplication");
 const Coupon = require("../models/Coupon");
 const CouponUsage = require("../models/CouponUsage");
@@ -188,7 +188,7 @@ const verifyPayment = asyncHandler(async (req, res) => {
     throw new Error("Payment record not found");
   }
 
-  const generated_signature = crypto
+  const generated_signature = nodeCrypto
     .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
     .update(razorpay_order_id + "|" + razorpay_payment_id)
     .digest("hex");
