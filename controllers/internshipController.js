@@ -1,9 +1,18 @@
 const InternshipApplication = require("../models/InternshipApplication");
+const Program = require("../models/Program");
 const Document = require("../models/Document");
 const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
 const { createNotification } = require("./notificationController");
 const { autoEnrollUser } = require("../utils/lmsHelpers");
+
+// @desc    Get all published programs
+// @route   GET /api/internships/programs
+// @access  Public
+const getPublishedPrograms = asyncHandler(async (req, res) => {
+  const programs = await Program.find({ isPublished: true }).sort({ createdAt: -1 });
+  res.json(programs);
+});
 
 // @desc    Apply for Internship
 // @route   POST /api/internships/apply
@@ -201,6 +210,7 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  getPublishedPrograms,
   applyForInternship,
   getInternshipApplications,
   updateInternshipStatus,

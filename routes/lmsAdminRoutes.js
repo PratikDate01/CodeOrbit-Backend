@@ -4,6 +4,7 @@ const {
   getPrograms,
   createProgram,
   updateProgram,
+  deleteProgram,
   getCourses,
   createCourse,
   getModules,
@@ -29,7 +30,8 @@ router.route("/programs")
   .post(admin, createProgram);
 
 router.route("/programs/:id")
-  .put(admin, updateProgram);
+  .put(admin, updateProgram)
+  .delete(admin, deleteProgram);
 
 // Course routes
 router.route("/programs/:programId/courses")

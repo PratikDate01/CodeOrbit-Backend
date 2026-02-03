@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const {
+  getPublishedPrograms,
   applyForInternship,
   getInternshipApplications,
   updateInternshipStatus,
@@ -9,6 +10,7 @@ const {
 } = require("../controllers/internshipController");
 const { protect, admin } = require("../middleware/authMiddleware");
 
+router.get("/programs", getPublishedPrograms);
 router.post("/apply", protect, applyForInternship);
 router.get("/my-applications", protect, getMyInternshipApplications);
 

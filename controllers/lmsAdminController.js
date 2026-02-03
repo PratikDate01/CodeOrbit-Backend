@@ -264,10 +264,34 @@ const issueCertificate = asyncHandler(async (req, res) => {
   res.status(201).json(certificate);
 });
 
+// @desc    Delete a program
+// @route   DELETE /api/admin/lms/programs/:id
+// @access  Private/Admin
+const deleteProgram = asyncHandler(async (req, res) => {
+  const program = await Program.findById(req.params.id);
+  if (!program) {
+    res.status(404);
+    throw new Error("Program not found");
+  }
+
+  await program.deleteOne();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "DELETE_LMS_PROGRAM",
+    targetType: "Program",
+    targetId: req.params.id,
+    details: { title: program.title },
+  });
+
+  res.json({ message: "Program deleted successfully" });
+});
+
 module.exports = {
   getPrograms,
   createProgram,
   updateProgram,
+  deleteProgram,
   getCourses,
   createCourse,
   getModules,
