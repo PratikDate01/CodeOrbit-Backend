@@ -20,46 +20,31 @@ const getBase64Image = (filePath) => {
   return null;
 };
 
-const generateDocuments = asyncHandler(async (req, res) => {
-  const { applicationId, startDate: reqStartDate, endDate: reqEndDate, regenerate = false } = req.body;
-  
-  // 1. Check if documents already exist and we are NOT regenerating
-  const existingDoc = await Document.findOne({ applicationId });
-  if (!regenerate && existingDoc?.offerLetterUrl && existingDoc?.certificateUrl && existingDoc?.locUrl) {
-    console.log(`[Controller] Documents already exist for ${applicationId}, skipping generation`);
-    return res.status(200).json({
-      success: true,
-      message: "Documents already exist",
-      verificationId: existingDoc.verificationId,
-      offerLetterUrl: existingDoc.offerLetterUrl,
-      certificateUrl: existingDoc.certificateUrl,
-      locUrl: existingDoc.locUrl
+// Helper to get or create Document record
+const getOrCreateDocument = async (applicationId, user) => {
+  let document = await Document.findOne({ applicationId });
+  if (!document) {
+    const verificationId = `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    document = await Document.create({
+      applicationId,
+      user,
+      verificationId
     });
   }
-  
-  // 2. Fetch Application Data
-  const application = await InternshipApplication.findById(applicationId).populate("user");
-  if (!application) {
-    res.status(404);
-    throw new Error("Application not found");
-  }
+  return document;
+};
 
-  // Check Eligibility for Certificate and LOC
-  const progress = await ActivityProgress.findOne({ internshipApplication: applicationId });
-  const isEligible = progress?.isEligibleForCertificate || false;
-
-  console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} documents for: ${application.name}. Eligible for Cert: ${isEligible}`);
-
-  const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+// Common data for PDF generation
+const getDocData = async (application, verificationId) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationId}`;
   const qrCodeDataUrl = await QRCode.toDataURL(verificationUrl);
-
-  const docData = {
+  
+  return {
     name: application.name,
     role: application.preferredDomain,
     college: application.college,
-    startDate: new Date(reqStartDate || application.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
-    endDate: new Date(reqEndDate || application.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    startDate: new Date(application.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    endDate: new Date(application.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     verificationId,
     verificationUrl: "verify.codeorbit.in",
@@ -71,111 +56,124 @@ const generateDocuments = asyncHandler(async (req, res) => {
     signatoryName: "Tejas Date",
     signatoryTitle: "CO-FOUNDER"
   };
+};
 
-  try {
-    const docUpdate = {
-      applicationId,
-      user: application.user?._id || application.user,
-      verificationId,
-    };
-
-    // 3. Sequential PDF Generation & Confirmed Uploads
-    // Offer Letter (Always generated)
-    console.log("[Step 1/3] Generating Offer Letter...");
-    const olBuffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
-    if (!olBuffer || !Buffer.isBuffer(olBuffer) || olBuffer.slice(0, 5).toString() !== "%PDF-") {
-      throw new Error(`Offer Letter PDF generation failed: Invalid or corrupted buffer`);
-    }
-    
-    const olUpload = await uploadBufferToCloudinary(olBuffer, "documents/offer_letters", `offer_letter_${applicationId}`);
-    if (!olUpload || !olUpload.secure_url) throw new Error("Offer Letter upload failed: No URL returned");
-
-    docUpdate.offerLetterUrl = olUpload.secure_url;
-    docUpdate.offerLetterPublicId = olUpload.public_id;
-
-    // Certificate (Only if eligible)
-    if (isEligible) {
-      console.log("[Step 2/3] Generating Certificate...");
-      const certBuffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
-      if (!certBuffer || !Buffer.isBuffer(certBuffer) || certBuffer.slice(0, 5).toString() !== "%PDF-") {
-        throw new Error(`Certificate PDF generation failed: Invalid or corrupted buffer`);
-      }
-      
-      const certUpload = await uploadBufferToCloudinary(certBuffer, "documents/certificates", `certificate_${applicationId}`);
-      if (!certUpload || !certUpload.secure_url) throw new Error("Certificate upload failed: No URL returned");
-
-      docUpdate.certificateUrl = certUpload.secure_url;
-      docUpdate.certificatePublicId = certUpload.public_id;
-
-      // LOC
-      console.log("[Step 3/3] Generating LOC...");
-      const locBuffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
-      if (!locBuffer || !Buffer.isBuffer(locBuffer) || locBuffer.slice(0, 5).toString() !== "%PDF-") {
-        throw new Error(`LOC PDF generation failed: Invalid or corrupted buffer`);
-      }
-      
-      const locUpload = await uploadBufferToCloudinary(locBuffer, "documents/locs", `loc_${applicationId}`);
-      if (!locUpload || !locUpload.secure_url) throw new Error("LOC upload failed: No URL returned");
-
-      docUpdate.locUrl = locUpload.secure_url;
-      docUpdate.locPublicId = locUpload.public_id;
-    } else {
-      console.log("[Step 2 & 3] Skipping Certificate & LOC generation - Student not eligible yet");
-    }
-
-    // 4. Atomic Database Update
-    console.log("[Step 4/4] Updating Database records...");
-    
-    if (!docUpdate.offerLetterUrl) {
-      throw new Error("Offer Letter URL is missing");
-    }
-
-    const document = await Document.findOneAndUpdate(
-      { applicationId },
-      { $set: docUpdate },
-      { upsert: true, new: true }
-    );
-
-    if (!document) {
-      throw new Error("Failed to update or create Document record");
-    }
-
-    // Update application status
-    application.status = "Approved";
-    if (reqStartDate) application.startDate = reqStartDate;
-    if (reqEndDate) application.endDate = reqEndDate;
-    await application.save();
-
-    await AuditLog.create({
-      admin: req.user._id,
-      actionType: regenerate ? "REGENERATE_DOCUMENTS" : "GENERATE_DOCUMENTS",
-      targetType: "InternshipApplication",
-      targetId: applicationId,
-      details: { verificationId },
-    });
-
-    console.log(`[Controller] SUCCESS: All documents generated, uploaded, and records saved for ${applicationId}`);
-
-    res.status(201).json({
-      success: true,
-      message: regenerate ? "Documents regenerated successfully" : "All documents generated and uploaded successfully",
-      verificationId: document.verificationId,
-      offerLetterUrl: document.offerLetterUrl,
-      certificateUrl: document.certificateUrl,
-      locUrl: document.locUrl
-    });
-
-  } catch (error) {
-    console.error("[Controller] CRITICAL ERROR during document process:", error);
-    // Ensure we don't send a success response if something failed
-    if (!res.headersSent) {
-      res.status(500).json({
-        success: false,
-        message: "Document generation failed",
-        error: error.message
-      });
-    }
+const generateOfferLetter = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
   }
+
+  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+  const docData = await getDocData(application, document.verificationId);
+
+  const buffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
+  const upload = await uploadBufferToCloudinary(buffer, "documents/offer_letters", `offer_letter_${applicationId}`);
+
+  document.offerLetterUrl = upload.secure_url;
+  document.offerLetterPublicId = upload.public_id;
+  await document.save();
+
+  // Update application status to approved if it was pending
+  if (application.status === "Pending") {
+    application.status = "Approved";
+    await application.save();
+  }
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "GENERATE_OFFER_LETTER",
+    targetType: "InternshipApplication",
+    targetId: applicationId,
+  });
+
+  res.status(200).json({ success: true, url: upload.secure_url });
+});
+
+const generateCertificate = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+
+  // Check Eligibility
+  const progress = await ActivityProgress.findOne({ internshipApplication: applicationId });
+  if (!progress?.isEligibleForCertificate) {
+    res.status(400);
+    throw new Error("Student not eligible for certificate yet");
+  }
+
+  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+  const docData = await getDocData(application, document.verificationId);
+
+  const buffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
+  const upload = await uploadBufferToCloudinary(buffer, "documents/certificates", `certificate_${applicationId}`);
+
+  document.certificateUrl = upload.secure_url;
+  document.certificatePublicId = upload.public_id;
+  await document.save();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "GENERATE_CERTIFICATE",
+    targetType: "InternshipApplication",
+    targetId: applicationId,
+  });
+
+  res.status(200).json({ success: true, url: upload.secure_url });
+});
+
+const generateLOC = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+
+  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+  const docData = await getDocData(application, document.verificationId);
+
+  const buffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
+  const upload = await uploadBufferToCloudinary(buffer, "documents/locs", `loc_${applicationId}`);
+
+  document.locUrl = upload.secure_url;
+  document.locPublicId = upload.public_id;
+  await document.save();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "GENERATE_LOC",
+    targetType: "InternshipApplication",
+    targetId: applicationId,
+  });
+
+  res.status(200).json({ success: true, url: upload.secure_url });
+});
+
+const toggleVisibility = asyncHandler(async (req, res) => {
+  const { applicationId, type, visible } = req.body;
+  const document = await Document.findOne({ applicationId });
+  if (!document) {
+    res.status(404);
+    throw new Error("Document record not found");
+  }
+
+  const field = `${type}Visible`;
+  document[field] = visible;
+  await document.save();
+
+  res.status(200).json({ success: true, [field]: document[field] });
+});
+
+const getDocuments = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const document = await Document.findOne({ applicationId });
+  res.status(200).json(document || {});
 });
 
 const generatePaymentSlip = asyncHandler(async (req, res) => {
@@ -220,15 +218,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
 
   try {
     const buffer = await generatePDF("paymentSlip", docData, { margin: { top: "0", bottom: "0" } });
-    if (!buffer || !Buffer.isBuffer(buffer) || buffer.slice(0, 5).toString() !== "%PDF-") {
-      throw new Error(`Payment slip PDF generation failed: Invalid or corrupted buffer`);
-    }
-
     const upload = await uploadBufferToCloudinary(buffer, "documents/payment_slips", `payment_slip_${applicationId}`);
-
-    if (!upload || !upload.secure_url) {
-      throw new Error("Payment slip upload failed: No URL returned from Cloudinary");
-    }
 
     const updatedDoc = await Document.findOneAndUpdate(
       { applicationId },
@@ -244,10 +234,6 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
       { upsert: true, new: true }
     );
 
-    if (!updatedDoc) {
-      throw new Error("Failed to update Document record with payment slip");
-    }
-
     await AuditLog.create({
       admin: req.user._id,
       actionType: regenerate ? "REGENERATE_PAYMENT_SLIP" : "GENERATE_PAYMENT_SLIP",
@@ -262,13 +248,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("[Controller] Payment Slip Error:", error);
-    if (!res.headersSent) {
-      res.status(500).json({ 
-        success: false, 
-        message: "Payment slip generation failed",
-        error: error.message 
-      });
-    }
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -284,7 +264,11 @@ const getDocumentByVerificationId = async (req, res) => {
 };
 
 module.exports = {
-  generateDocuments,
+  generateOfferLetter,
+  generateCertificate,
+  generateLOC,
+  toggleVisibility,
+  getDocuments,
   getDocumentByVerificationId,
   generatePaymentSlip,
 };

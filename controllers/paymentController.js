@@ -31,8 +31,13 @@ const checkCouponValidity = async (code, userId, amount) => {
   }
 
   // Check eligibility for plan
-  if (!coupon.applicablePlans.includes(amount)) {
-    throw new Error("Coupon not applicable for this plan");
+  if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
+    // Round to handle potential float issues, though amounts should be integers
+    const currentAmount = Math.round(amount);
+    const isApplicable = coupon.applicablePlans.some(plan => Math.round(plan) === currentAmount);
+    if (!isApplicable) {
+      throw new Error("Coupon not applicable for this plan");
+    }
   }
 
   return coupon;
@@ -60,13 +65,15 @@ const validateCoupon = asyncHandler(async (req, res) => {
     const coupon = await checkCouponValidity(code, req.user._id, application.amount);
     
     let discountAmount = 0;
+    const baseAmount = Number(application.amount) || 0;
+    
     if (coupon.discountType === "percentage") {
-      discountAmount = Math.floor((application.amount * coupon.discountValue) / 100);
+      discountAmount = Math.floor((baseAmount * Number(coupon.discountValue)) / 100);
     } else {
-      discountAmount = coupon.discountValue;
+      discountAmount = Number(coupon.discountValue) || 0;
     }
 
-    const finalAmount = application.amount - discountAmount;
+    const finalAmount = Math.max(0, baseAmount - discountAmount);
 
     res.json({
       success: true,
@@ -105,19 +112,20 @@ const createOrder = asyncHandler(async (req, res) => {
     await application.save();
   }
 
-  let finalAmount = application.amount;
   let discountAmount = 0;
+  let baseAmount = Number(application.amount) || 0;
+  let finalAmount = baseAmount;
   let coupon = null;
 
   if (couponCode) {
     try {
-      coupon = await checkCouponValidity(couponCode, req.user._id, application.amount);
+      coupon = await checkCouponValidity(couponCode, req.user._id, baseAmount);
       if (coupon.discountType === "percentage") {
-        discountAmount = Math.floor((application.amount * coupon.discountValue) / 100);
+        discountAmount = Math.floor((baseAmount * Number(coupon.discountValue)) / 100);
       } else {
-        discountAmount = coupon.discountValue;
+        discountAmount = Number(coupon.discountValue) || 0;
       }
-      finalAmount = application.amount - discountAmount;
+      finalAmount = Math.max(0, baseAmount - discountAmount);
     } catch (error) {
       res.status(400);
       throw new Error(`Coupon Error: ${error.message}`);
@@ -202,28 +210,28 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
     // Update application
     const application = await InternshipApplication.findById(applicationId);
-    if (application) {
+    if (application && application.paymentStatus !== "Verified") {
       application.paymentStatus = "Verified";
       application.razorpayPaymentId = razorpay_payment_id;
       application.razorpaySignature = razorpay_signature;
       application.transactionId = razorpay_payment_id;
       application.status = "Approved"; 
       await application.save();
-    }
 
-    // If coupon was used, update coupon usage
-    if (payment.couponUsed) {
-      const coupon = await Coupon.findById(payment.couponUsed);
-      if (coupon) {
-        coupon.currentUses += 1;
-        await coupon.save();
+      // If coupon was used, update coupon usage
+      if (payment.couponUsed) {
+        const coupon = await Coupon.findById(payment.couponUsed);
+        if (coupon) {
+          coupon.currentUses += 1;
+          await coupon.save();
 
-        await CouponUsage.create({
-          coupon: coupon._id,
-          user: req.user._id,
-          application: applicationId,
-          discountAmount: payment.discountAmount
-        });
+          await CouponUsage.create({
+            coupon: coupon._id,
+            user: application.user,
+            application: applicationId,
+            discountAmount: payment.discountAmount
+          });
+        }
       }
     }
 
@@ -235,8 +243,70 @@ const verifyPayment = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Razorpay Webhook
+// @route   POST /api/payments/webhook
+// @access  Public
+const razorpayWebhook = asyncHandler(async (req, res) => {
+  const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  const signature = req.headers["x-razorpay-signature"];
+
+  const shasum = nodeCrypto.createHmac("sha256", webhookSecret);
+  shasum.update(JSON.stringify(req.body));
+  const digest = shasum.digest("hex");
+
+  if (signature !== digest) {
+    return res.status(400).json({ success: false, message: "Invalid signature" });
+  }
+
+  const event = req.body.event;
+  const payload = req.body.payload;
+
+  if (event === "payment.captured") {
+    const razorpayOrderId = payload.payment.entity.order_id;
+    const razorpayPaymentId = payload.payment.entity.id;
+
+    const payment = await Payment.findOne({ razorpayOrderId });
+    if (payment && payment.status !== "captured") {
+      payment.status = "captured";
+      payment.razorpayPaymentId = razorpayPaymentId;
+      await payment.save();
+
+      const application = await InternshipApplication.findById(payment.applicationId);
+      if (application && application.paymentStatus !== "Verified") {
+        application.paymentStatus = "Verified";
+        application.razorpayPaymentId = razorpayPaymentId;
+        application.transactionId = razorpayPaymentId;
+        application.status = "Approved";
+        await application.save();
+
+        // Coupon usage update logic if not already done
+        if (payment.couponUsed) {
+          const couponUsageExists = await CouponUsage.findOne({ application: application._id });
+          if (!couponUsageExists) {
+            const coupon = await Coupon.findById(payment.couponUsed);
+            if (coupon) {
+              coupon.currentUses += 1;
+              await coupon.save();
+
+              await CouponUsage.create({
+                coupon: coupon._id,
+                user: application.user,
+                application: application._id,
+                discountAmount: payment.discountAmount
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  res.json({ status: "ok" });
+});
+
 module.exports = {
   validateCoupon,
   createOrder,
   verifyPayment,
+  razorpayWebhook,
 };

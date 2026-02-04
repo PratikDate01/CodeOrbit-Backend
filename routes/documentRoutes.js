@@ -1,11 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const { generateDocuments, getDocumentByVerificationId, generatePaymentSlip } = require("../controllers/documentController");
-// Assuming there's a protect and admin middleware
 const { protect, admin } = require("../middleware/authMiddleware");
+const { 
+  generateOfferLetter, 
+  generateCertificate, 
+  generateLOC, 
+  toggleVisibility, 
+  getDocuments,
+  getDocumentByVerificationId, 
+  generatePaymentSlip 
+} = require("../controllers/documentController");
 
-// In some projects it might be different, let's check existing routes for middleware usage
-router.post("/generate-offer-letter", protect, admin, generateDocuments);
+router.post("/generate/offer-letter", protect, admin, generateOfferLetter);
+router.post("/generate/certificate", protect, admin, generateCertificate);
+router.post("/generate/loc", protect, admin, generateLOC);
+router.patch("/visibility", protect, admin, toggleVisibility);
+router.get("/application/:applicationId", protect, getDocuments);
 router.post("/generate-payment-slip", protect, admin, generatePaymentSlip);
 router.get("/verify/:verificationId", getDocumentByVerificationId);
 

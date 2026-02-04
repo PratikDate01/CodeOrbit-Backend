@@ -41,6 +41,22 @@ const documentSchema = mongoose.Schema(
       unique: true,
       required: true,
     },
+    offerLetterVisible: {
+      type: Boolean,
+      default: false,
+    },
+    certificateVisible: {
+      type: Boolean,
+      default: false,
+    },
+    locVisible: {
+      type: Boolean,
+      default: false,
+    },
+    paymentSlipVisible: {
+      type: Boolean,
+      default: true,
+    },
     issuedOn: {
       type: Date,
       default: Date.now,

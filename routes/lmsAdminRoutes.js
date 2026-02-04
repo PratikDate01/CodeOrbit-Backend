@@ -7,10 +7,21 @@ const {
   deleteProgram,
   getCourses,
   createCourse,
+  updateCourse,
+  deleteCourse,
   getModules,
   createModule,
+  updateModule,
+  deleteModule,
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
   getActivities,
   createActivity,
+  updateActivity,
+  deleteActivity,
+  getPendingApprovals,
   approveActivityProgress,
   getEnrollments,
   issueCertificate,
@@ -36,22 +47,49 @@ router.route("/programs/:id")
 // Course routes
 router.route("/programs/:programId/courses")
   .get(staff, getCourses);
+
 router.route("/courses")
   .post(admin, createCourse);
+
+router.route("/courses/:id")
+  .put(admin, updateCourse)
+  .delete(admin, deleteCourse);
 
 // Module routes
 router.route("/courses/:courseId/modules")
   .get(staff, getModules);
+
 router.route("/modules")
   .post(admin, createModule);
 
-// Lesson/Activity routes (Simplified for now)
+router.route("/modules/:id")
+  .put(admin, updateModule)
+  .delete(admin, deleteModule);
+
+// Lesson routes
+router.route("/modules/:moduleId/lessons")
+  .get(staff, getLessons);
+
+router.route("/lessons")
+  .post(admin, createLesson);
+
+router.route("/lessons/:id")
+  .put(admin, updateLesson)
+  .delete(admin, deleteLesson);
+
+// Activity routes
 router.route("/lessons/:lessonId/activities")
   .get(staff, getActivities);
+
 router.route("/activities")
   .post(admin, createActivity);
 
+router.route("/activities/:id")
+  .put(admin, updateActivity)
+  .delete(admin, deleteActivity);
+
 // Approval route
+router.get("/approvals/pending", staff, getPendingApprovals);
 router.route("/progress/:id/approve")
   .patch(admin, approveActivityProgress);
 

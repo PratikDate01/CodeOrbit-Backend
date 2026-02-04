@@ -32,11 +32,16 @@ const applyForInternship = asyncHandler(async (req, res) => {
     throw new Error("You already have an active application for this domain.");
   }
 
+  let finalAmount = amount;
+  if (!finalAmount || finalAmount === 0) {
+    finalAmount = duration === 1 ? 399 : duration === 3 ? 599 : 999;
+  }
+
   const application = await InternshipApplication.create({
     ...formData,
     preferredDomain,
     duration,
-    amount: amount || 0,
+    amount: finalAmount,
     user: req.user._id,
     status: "New"
   });
@@ -188,21 +193,38 @@ const deleteInternshipApplication = asyncHandler(async (req, res) => {
 // @route   GET /api/internships/my-applications
 // @access  Private
 const getMyInternshipApplications = asyncHandler(async (req, res) => {
-  const applications = await InternshipApplication.find({ user: req.user._id })
-    .sort({ createdAt: -1 })
-    .lean();
+  let applications = await InternshipApplication.find({ user: req.user._id })
+    .sort({ createdAt: -1 });
 
   if (!applications || applications.length === 0) {
     return res.json([]);
   }
 
-  const applicationIds = applications.map(app => app._id);
+  // Fix 0 amounts for existing applications
+  for (let app of applications) {
+    if (!app.amount || app.amount === 0) {
+      app.amount = app.duration === 1 ? 399 : app.duration === 3 ? 599 : 999;
+      await app.save();
+    }
+  }
+
+  const applicationsLean = applications.map(app => app.toObject());
+  const applicationIds = applicationsLean.map(app => app._id);
   const allDocuments = await Document.find({ applicationId: { $in: applicationIds } }).lean();
 
-  const appsWithDocs = applications.map(app => {
+  const appsWithDocs = applicationsLean.map(app => {
     const documents = allDocuments.find(doc => 
       doc.applicationId && doc.applicationId.toString() === app._id.toString()
     );
+    
+    // Filter out URLs based on visibility for security
+    if (documents) {
+      if (!documents.offerLetterVisible) delete documents.offerLetterUrl;
+      if (!documents.certificateVisible) delete documents.certificateUrl;
+      if (!documents.locVisible) delete documents.locUrl;
+      if (!documents.paymentSlipVisible) delete documents.paymentSlipUrl;
+    }
+
     return { ...app, documents };
   });
 

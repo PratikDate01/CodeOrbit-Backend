@@ -1,6 +1,7 @@
 const Program = require("../models/Program");
 const Course = require("../models/Course");
 const Module = require("../models/Module");
+const Lesson = require("../models/Lesson");
 const Activity = require("../models/Activity");
 const LMSActivityProgress = require("../models/LMSActivityProgress");
 const Enrollment = require("../models/Enrollment");
@@ -99,6 +100,32 @@ const createCourse = asyncHandler(async (req, res) => {
   res.status(201).json(course);
 });
 
+// @desc    Update a course
+// @route   PUT /api/admin/lms/courses/:id
+// @access  Private/Admin
+const updateCourse = asyncHandler(async (req, res) => {
+  const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!course) {
+    res.status(404);
+    throw new Error("Course not found");
+  }
+  res.json(course);
+});
+
+// @desc    Delete a course
+// @route   DELETE /api/admin/lms/courses/:id
+// @access  Private/Admin
+const deleteCourse = asyncHandler(async (req, res) => {
+  const course = await Course.findById(req.params.id);
+  if (course) {
+    await course.deleteOne();
+    res.json({ message: "Course removed" });
+  } else {
+    res.status(404);
+    throw new Error("Course not found");
+  }
+});
+
 // --- Module Controllers ---
 
 // @desc    Get modules for a course
@@ -127,6 +154,86 @@ const createModule = asyncHandler(async (req, res) => {
   res.status(201).json(moduleObj);
 });
 
+// @desc    Update a module
+// @route   PUT /api/admin/lms/modules/:id
+// @access  Private/Admin
+const updateModule = asyncHandler(async (req, res) => {
+  const moduleObj = await Module.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!moduleObj) {
+    res.status(404);
+    throw new Error("Module not found");
+  }
+  res.json(moduleObj);
+});
+
+// @desc    Delete a module
+// @route   DELETE /api/admin/lms/modules/:id
+// @access  Private/Admin
+const deleteModule = asyncHandler(async (req, res) => {
+  const moduleObj = await Module.findById(req.params.id);
+  if (moduleObj) {
+    await moduleObj.deleteOne();
+    res.json({ message: "Module removed" });
+  } else {
+    res.status(404);
+    throw new Error("Module not found");
+  }
+});
+
+// --- Lesson Controllers ---
+
+// @desc    Get lessons for a module
+// @route   GET /api/admin/lms/modules/:moduleId/lessons
+// @access  Private/Staff
+const getLessons = asyncHandler(async (req, res) => {
+  const lessons = await Lesson.find({ module: req.params.moduleId }).sort({ order: 1 });
+  res.json(lessons);
+});
+
+// @desc    Create a lesson
+// @route   POST /api/admin/lms/lessons
+// @access  Private/Admin
+const createLesson = asyncHandler(async (req, res) => {
+  const { module: moduleId, title, description, order } = req.body;
+  const lesson = await Lesson.create({ module: moduleId, title, description, order });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "CREATE_LMS_LESSON",
+    targetType: "Lesson",
+    targetId: lesson._id,
+    details: { title, moduleId },
+  });
+
+  res.status(201).json(lesson);
+});
+
+// @desc    Update a lesson
+// @route   PUT /api/admin/lms/lessons/:id
+// @access  Private/Admin
+const updateLesson = asyncHandler(async (req, res) => {
+  const lesson = await Lesson.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!lesson) {
+    res.status(404);
+    throw new Error("Lesson not found");
+  }
+  res.json(lesson);
+});
+
+// @desc    Delete a lesson
+// @route   DELETE /api/admin/lms/lessons/:id
+// @access  Private/Admin
+const deleteLesson = asyncHandler(async (req, res) => {
+  const lesson = await Lesson.findById(req.params.id);
+  if (lesson) {
+    await lesson.deleteOne();
+    res.json({ message: "Lesson removed" });
+  } else {
+    res.status(404);
+    throw new Error("Lesson not found");
+  }
+});
+
 // --- Activity Controllers ---
 
 // @desc    Get activities for a lesson
@@ -152,6 +259,32 @@ const createActivity = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json(activity);
+});
+
+// @desc    Update an activity
+// @route   PUT /api/admin/lms/activities/:id
+// @access  Private/Admin
+const updateActivity = asyncHandler(async (req, res) => {
+  const activity = await Activity.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  if (!activity) {
+    res.status(404);
+    throw new Error("Activity not found");
+  }
+  res.json(activity);
+});
+
+// @desc    Delete an activity
+// @route   DELETE /api/admin/lms/activities/:id
+// @access  Private/Admin
+const deleteActivity = asyncHandler(async (req, res) => {
+  const activity = await Activity.findById(req.params.id);
+  if (activity) {
+    await activity.deleteOne();
+    res.json({ message: "Activity removed" });
+  } else {
+    res.status(404);
+    throw new Error("Activity not found");
+  }
 });
 
 // --- Approval Controllers ---
@@ -287,6 +420,22 @@ const deleteProgram = asyncHandler(async (req, res) => {
   res.json({ message: "Program deleted successfully" });
 });
 
+// @desc    Get all pending activity approvals
+// @route   GET /api/admin/lms/approvals/pending
+// @access  Private/Staff
+const getPendingApprovals = asyncHandler(async (req, res) => {
+  const pending = await LMSActivityProgress.find({ status: "Pending Approval" })
+    .populate("user", "name email")
+    .populate({
+      path: "enrollment",
+      populate: { path: "program", select: "title" }
+    })
+    .populate("activity", "title type")
+    .sort({ createdAt: -1 });
+  
+  res.json(pending);
+});
+
 module.exports = {
   getPrograms,
   createProgram,
@@ -294,10 +443,21 @@ module.exports = {
   deleteProgram,
   getCourses,
   createCourse,
+  updateCourse,
+  deleteCourse,
   getModules,
   createModule,
+  updateModule,
+  deleteModule,
+  getLessons,
+  createLesson,
+  updateLesson,
+  deleteLesson,
   getActivities,
   createActivity,
+  updateActivity,
+  deleteActivity,
+  getPendingApprovals,
   approveActivityProgress,
   getEnrollments,
   issueCertificate,
