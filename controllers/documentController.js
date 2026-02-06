@@ -87,6 +87,7 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
 
   document.offerLetterUrl = upload.secure_url;
   document.offerLetterPublicId = upload.public_id;
+  document.offerLetterVisible = true; // Auto-show after generation
   await document.save();
 
   // Update application status to approved if it was pending
@@ -133,6 +134,7 @@ const generateCertificate = asyncHandler(async (req, res) => {
 
   document.certificateUrl = upload.secure_url;
   document.certificatePublicId = upload.public_id;
+  document.certificateVisible = true; // Auto-show after generation
   await document.save();
 
   await AuditLog.create({
@@ -166,6 +168,7 @@ const generateLOC = asyncHandler(async (req, res) => {
 
   document.locUrl = upload.secure_url;
   document.locPublicId = upload.public_id;
+  document.locVisible = true; // Auto-show after generation
   await document.save();
 
   await AuditLog.create({
@@ -254,6 +257,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
         $set: { 
           paymentSlipUrl: upload.secure_url, 
           paymentSlipPublicId: upload.public_id,
+          paymentSlipVisible: true, // Auto-show after generation
           user: application.user?._id || application.user,
           verificationId,
           applicationId
