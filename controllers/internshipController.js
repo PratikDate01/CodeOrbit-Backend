@@ -37,8 +37,23 @@ const applyForInternship = asyncHandler(async (req, res) => {
     finalAmount = duration === 1 ? 399 : duration === 3 ? 599 : 999;
   }
 
+  // Sanitize and extract only needed fields from formData to prevent mass assignment
+  const { 
+    name, email, phone, college, graduationYear, 
+    city, state, country, githubProfile, linkedinProfile 
+  } = formData || {};
+
   const application = await InternshipApplication.create({
-    ...formData,
+    name,
+    email,
+    phone,
+    college,
+    graduationYear,
+    city,
+    state,
+    country,
+    githubProfile,
+    linkedinProfile,
     preferredDomain,
     duration,
     amount: finalAmount,
@@ -96,11 +111,24 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
   if (application) {
     const oldStatus = application.status;
     const oldPaymentStatus = application.paymentStatus;
-    application.status = req.body.status !== undefined ? req.body.status : application.status;
-    application.paymentStatus = req.body.paymentStatus !== undefined ? req.body.paymentStatus : application.paymentStatus;
-    application.startDate = req.body.startDate !== undefined ? req.body.startDate : application.startDate;
-    application.endDate = req.body.endDate !== undefined ? req.body.endDate : application.endDate;
-    application.documentIssueDate = req.body.documentIssueDate !== undefined ? req.body.documentIssueDate : application.documentIssueDate;
+    
+    // Explicitly allow only these fields to be updated by admin
+    const allowedUpdates = [
+      "status", 
+      "paymentStatus", 
+      "startDate", 
+      "endDate", 
+      "documentIssueDate",
+      "amount",
+      "duration",
+      "preferredDomain"
+    ];
+
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        application[field] = req.body[field];
+      }
+    });
     
     const updatedApplication = await application.save();
 
