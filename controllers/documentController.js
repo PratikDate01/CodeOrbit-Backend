@@ -53,7 +53,7 @@ const getDocData = async (application, verificationId) => {
     college: application.college,
     startDate: formatDate(application.startDate),
     endDate: formatDate(application.endDate),
-    date: formatDate(application.documentIssueDate),
+    date: formatDate(application.documentIssueDate || new Date()),
     verificationId,
     verificationUrl: "verify.codeorbit.in",
     qrCode: qrCodeDataUrl,
@@ -72,11 +72,6 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   if (!application) {
     res.status(404);
     throw new Error("Application not found");
-  }
-
-  if (!application.documentIssueDate) {
-    res.status(400);
-    throw new Error("Please set document issue date before generating.");
   }
 
   const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
@@ -155,11 +150,6 @@ const generateLOC = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
-  if (!application.documentIssueDate) {
-    res.status(400);
-    throw new Error("Please set document issue date before generating.");
-  }
-
   const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
   const docData = await getDocData(application, document.verificationId);
 
@@ -220,11 +210,6 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     throw new Error("Application not found or payment not verified");
   }
 
-  if (!application.documentIssueDate) {
-    res.status(400);
-    throw new Error("Please set document issue date before generating.");
-  }
-
   console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} Payment Slip for: ${application.name}`);
   
   const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -239,7 +224,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     duration: application.duration,
     amount: amount,
     amountInWords: numberToWords(amount),
-    date: formatDate(application.documentIssueDate),
+    date: formatDate(application.documentIssueDate || new Date()),
     transactionId: application.transactionId || 'N/A',
     companyLogo: getBase64Image("assets/logos/Company Logo.png"),
     aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),

@@ -27,29 +27,37 @@ const app = express();
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://code-orbit-tech.vercel.app",
+  "https://www.code-orbit-tech.vercel.app",
+  "https://codeorbit.in",
+  "https://www.codeorbit.in",
   "http://localhost:3000"
-].filter(Boolean).map(url => url.replace(/\/$/, "")); // Remove trailing slashes
+].filter(Boolean).map(url => url.toLowerCase().replace(/\/$/, ""));
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Check if origin is allowed
-    const isAllowed = allowedOrigins.some(allowed => {
-      return allowed === origin || allowed === origin.replace(/\/$/, "");
-    });
-
-    if (isAllowed) {
+    const normalizedOrigin = origin.toLowerCase().replace(/\/$/, "");
+    if (allowedOrigins.includes(normalizedOrigin)) {
       callback(null, true);
     } else {
-      console.error(`CORS Blocked: ${origin}`);
-      callback(new Error("Not allowed by CORS"));
+      console.warn(`CORS request from unauthorized origin: ${origin}`);
+      callback(null, false);
     }
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
+  allowedHeaders: [
+    "Content-Type", 
+    "Authorization", 
+    "X-Requested-With", 
+    "Accept", 
+    "Origin",
+    "Access-Control-Allow-Headers",
+    "Access-Control-Request-Method",
+    "Access-Control-Request-Headers"
+  ],
+  exposedHeaders: ["Content-Disposition", "x-rtb-fingerprint-id"],
   optionsSuccessStatus: 200
 }));
 
