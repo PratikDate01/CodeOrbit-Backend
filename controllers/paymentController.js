@@ -32,9 +32,8 @@ const checkCouponValidity = async (code, userId, amount) => {
 
   // Check eligibility for plan
   if (coupon.applicablePlans && coupon.applicablePlans.length > 0) {
-    // Round to handle potential float issues, though amounts should be integers
-    const currentAmount = Math.round(amount);
-    const isApplicable = coupon.applicablePlans.some(plan => Math.round(plan) === currentAmount);
+    const currentAmount = Math.round(Number(amount) || 0);
+    const isApplicable = coupon.applicablePlans.some(plan => Math.round(Number(plan) || 0) === currentAmount);
     if (!isApplicable) {
       throw new Error("Coupon not applicable for this plan");
     }
@@ -66,11 +65,12 @@ const validateCoupon = asyncHandler(async (req, res) => {
     
     let discountAmount = 0;
     const baseAmount = Number(application.amount) || 0;
+    const discValue = Number(coupon.discountValue) || 0;
     
     if (coupon.discountType === "percentage") {
-      discountAmount = Math.floor((baseAmount * Number(coupon.discountValue)) / 100);
+      discountAmount = Math.floor((baseAmount * discValue) / 100);
     } else {
-      discountAmount = Number(coupon.discountValue) || 0;
+      discountAmount = discValue;
     }
 
     const finalAmount = Math.max(0, baseAmount - discountAmount);
@@ -79,10 +79,10 @@ const validateCoupon = asyncHandler(async (req, res) => {
       success: true,
       couponId: coupon._id,
       code: coupon.code,
-      discountAmount,
-      finalAmount,
+      discountAmount: Number(discountAmount) || 0,
+      finalAmount: Number(finalAmount) || 0,
       discountType: coupon.discountType,
-      discountValue: coupon.discountValue
+      discountValue: discValue
     });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -120,10 +120,12 @@ const createOrder = asyncHandler(async (req, res) => {
   if (couponCode) {
     try {
       coupon = await checkCouponValidity(couponCode, req.user._id, baseAmount);
+      const discValue = Number(coupon.discountValue) || 0;
+
       if (coupon.discountType === "percentage") {
-        discountAmount = Math.floor((baseAmount * Number(coupon.discountValue)) / 100);
+        discountAmount = Math.floor((baseAmount * discValue) / 100);
       } else {
-        discountAmount = Number(coupon.discountValue) || 0;
+        discountAmount = discValue;
       }
       finalAmount = Math.max(0, baseAmount - discountAmount);
     } catch (error) {
@@ -138,7 +140,7 @@ const createOrder = asyncHandler(async (req, res) => {
   });
 
   const options = {
-    amount: Math.round(finalAmount * 100), // amount in smallest currency unit (paise)
+    amount: Math.round((Number(finalAmount) || 0) * 100), // amount in smallest currency unit (paise)
     currency: "INR",
     receipt: `receipt_${application._id}`,
     notes: {

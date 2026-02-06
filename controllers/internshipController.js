@@ -100,6 +100,7 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
     application.paymentStatus = req.body.paymentStatus !== undefined ? req.body.paymentStatus : application.paymentStatus;
     application.startDate = req.body.startDate !== undefined ? req.body.startDate : application.startDate;
     application.endDate = req.body.endDate !== undefined ? req.body.endDate : application.endDate;
+    application.documentIssueDate = req.body.documentIssueDate !== undefined ? req.body.documentIssueDate : application.documentIssueDate;
     
     const updatedApplication = await application.save();
 

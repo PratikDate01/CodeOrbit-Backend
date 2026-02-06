@@ -38,6 +38,7 @@ const formatDate = (date) => {
   if (!date) return "Not Specified";
   const d = new Date(date);
   if (isNaN(d.getTime())) return "Not Specified";
+  // DD Month YYYY format
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
@@ -52,7 +53,7 @@ const getDocData = async (application, verificationId) => {
     college: application.college,
     startDate: formatDate(application.startDate),
     endDate: formatDate(application.endDate),
-    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    date: formatDate(application.documentIssueDate),
     verificationId,
     verificationUrl: "verify.codeorbit.in",
     qrCode: qrCodeDataUrl,
@@ -71,6 +72,11 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
   if (!application) {
     res.status(404);
     throw new Error("Application not found");
+  }
+
+  if (!application.documentIssueDate) {
+    res.status(400);
+    throw new Error("Please set document issue date before generating.");
   }
 
   const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
@@ -107,6 +113,11 @@ const generateCertificate = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
+  if (!application.documentIssueDate) {
+    res.status(400);
+    throw new Error("Please set document issue date before generating.");
+  }
+
   // Check Eligibility
   const progress = await ActivityProgress.findOne({ internshipApplication: applicationId });
   if (!progress?.isEligibleForCertificate) {
@@ -140,6 +151,11 @@ const generateLOC = asyncHandler(async (req, res) => {
   if (!application) {
     res.status(404);
     throw new Error("Application not found");
+  }
+
+  if (!application.documentIssueDate) {
+    res.status(400);
+    throw new Error("Please set document issue date before generating.");
   }
 
   const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
@@ -201,8 +217,13 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     throw new Error("Application not found or payment not verified");
   }
 
-  console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} Payment Slip for: ${application.name}`);
+  if (!application.documentIssueDate) {
+    res.status(400);
+    throw new Error("Please set document issue date before generating.");
+  }
 
+  console.log(`[Controller] ${regenerate ? "Regenerating" : "Generating"} Payment Slip for: ${application.name}`);
+  
   const verificationId = existingDoc?.verificationId || `COS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
   const amount = application.amount || 0;
   const docData = {
@@ -215,7 +236,7 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     duration: application.duration,
     amount: amount,
     amountInWords: numberToWords(amount),
-    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    date: formatDate(application.documentIssueDate),
     transactionId: application.transactionId || 'N/A',
     companyLogo: getBase64Image("assets/logos/Company Logo.png"),
     aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),

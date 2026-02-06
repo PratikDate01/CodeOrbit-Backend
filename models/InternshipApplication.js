@@ -76,6 +76,9 @@ const internshipApplicationSchema = mongoose.Schema(
     endDate: {
       type: Date,
     },
+    documentIssueDate: {
+      type: Date,
+    },
     status: {
       type: String,
       enum: ["New", "Reviewed", "Contacted", "Selected", "Rejected", "Approved", "Completed"],
