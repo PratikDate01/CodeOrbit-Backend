@@ -34,6 +34,13 @@ const getOrCreateDocument = async (applicationId, user) => {
   return document;
 };
 
+const formatDate = (date) => {
+  if (!date) return "Not Specified";
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return "Not Specified";
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+};
+
 // Common data for PDF generation
 const getDocData = async (application, verificationId) => {
   const verificationUrl = `${process.env.FRONTEND_URL}/verify/${verificationId}`;
@@ -43,8 +50,8 @@ const getDocData = async (application, verificationId) => {
     name: application.name,
     role: application.preferredDomain,
     college: application.college,
-    startDate: new Date(application.startDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
-    endDate: new Date(application.endDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
+    startDate: formatDate(application.startDate),
+    endDate: formatDate(application.endDate),
     date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }),
     verificationId,
     verificationUrl: "verify.codeorbit.in",

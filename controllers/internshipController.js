@@ -96,10 +96,10 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
   if (application) {
     const oldStatus = application.status;
     const oldPaymentStatus = application.paymentStatus;
-    application.status = req.body.status || application.status;
-    application.paymentStatus = req.body.paymentStatus || application.paymentStatus;
-    application.startDate = req.body.startDate || application.startDate;
-    application.endDate = req.body.endDate || application.endDate;
+    application.status = req.body.status !== undefined ? req.body.status : application.status;
+    application.paymentStatus = req.body.paymentStatus !== undefined ? req.body.paymentStatus : application.paymentStatus;
+    application.startDate = req.body.startDate !== undefined ? req.body.startDate : application.startDate;
+    application.endDate = req.body.endDate !== undefined ? req.body.endDate : application.endDate;
     
     const updatedApplication = await application.save();
 
