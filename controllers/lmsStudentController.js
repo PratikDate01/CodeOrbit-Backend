@@ -32,7 +32,7 @@ const getProgramDetails = asyncHandler(async (req, res) => {
   }
 
   const program = await Program.findById(req.params.id);
-  const courses = await Course.find({ program: req.params.id, isPublished: true }).sort({ order: 1 });
+  const courses = await Course.find({ program: req.params.id }).sort({ order: 1 });
 
   res.json({ program, courses });
 });
@@ -58,15 +58,15 @@ const getCourseContent = asyncHandler(async (req, res) => {
     throw new Error("Not enrolled in this program");
   }
 
-  const modules = await Module.find({ course: req.params.courseId, isPublished: true }).sort({ order: 1 });
+  const modules = await Module.find({ course: req.params.courseId }).sort({ order: 1 });
   
   // Get all lessons for these modules
   const moduleIds = modules.map(m => m._id);
-  const lessons = await Lesson.find({ module: { $in: moduleIds }, isPublished: true }).sort({ order: 1 });
+  const lessons = await Lesson.find({ module: { $in: moduleIds } }).sort({ order: 1 });
 
   // Get all activities for these lessons
   const lessonIds = lessons.map(l => l._id);
-  const activities = await Activity.find({ lesson: { $in: lessonIds }, isPublished: true }).sort({ order: 1 });
+  const activities = await Activity.find({ lesson: { $in: lessonIds } }).sort({ order: 1 });
 
   // Get user progress for these activities
   const progress = await LMSActivityProgress.find({
