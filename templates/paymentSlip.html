@@ -7,7 +7,7 @@
     <style>
         @page {
             size: A4 portrait;
-            margin: 0;
+            margin: 10mm;
         }
 
         * {
@@ -17,283 +17,301 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f5f5f5;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.4;
         }
 
         .receipt-container {
-            width: 210mm;
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
             background: white;
-            padding: 50px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-            border: 3px solid #1e3a8a;
+            padding: 40px;
+            border: 2px solid #1e3a8a;
             position: relative;
         }
 
         /* Header Section */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 10px;
+            display: table;
+            width: 100%;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #f3f4f6;
+            padding-bottom: 20px;
         }
 
         .header-left {
-            display: flex;
-            flex-direction: column;
+            display: table-cell;
+            vertical-align: top;
         }
 
         .logo {
-            width: 80px;
-            height: 80px;
-            margin-bottom: 15px;
+            width: 70px;
+            height: 70px;
+            margin-bottom: 10px;
             image-rendering: -webkit-optimize-contrast;
         }
 
         .tagline {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 1.5px;
+            font-weight: 600;
         }
 
         .header-right {
+            display: table-cell;
+            vertical-align: top;
             text-align: right;
         }
 
         .receipt-title {
-            font-size: 36px;
-            font-weight: bold;
+            font-size: 32px;
+            font-weight: 900;
             color: #1e3a8a;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
+            letter-spacing: -1px;
         }
 
         .receipt-number {
             font-size: 11px;
             color: #6b7280;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            font-family: monospace;
         }
 
         .payment-verified {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 6px 16px;
-            font-size: 11px;
-            font-weight: bold;
+            background-color: #10b981;
+            color: #ffffff;
+            padding: 5px 12px;
+            font-size: 10px;
+            font-weight: 800;
             border-radius: 4px;
             display: inline-block;
+            text-transform: uppercase;
         }
 
         /* Info Section */
         .info-section {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 40px;
+            display: table;
+            width: 100%;
+            margin-top: 30px;
             margin-bottom: 30px;
+            table-layout: fixed;
         }
 
         .info-box {
-            flex: 1;
+            display: table-cell;
+            vertical-align: top;
+            width: 50%;
         }
 
         .info-box-left {
-            background-color: #f9fafb;
+            background-color: #f8fafc;
             padding: 20px;
-            margin-right: 20px;
+            border-radius: 8px;
         }
 
         .info-box-right {
-            background-color: #fff;
             padding: 20px;
+            padding-right: 0;
         }
 
         .info-heading {
-            font-size: 11px;
-            color: #d97706;
-            font-weight: bold;
+            font-size: 10px;
+            color: #b45309;
+            font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 15px;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
         }
 
         .company-name {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 15px;
+            font-weight: 700;
             color: #1e3a8a;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
 
         .company-details {
-            font-size: 12px;
-            color: #6b7280;
-            line-height: 1.6;
+            font-size: 11px;
+            color: #4b5563;
+            line-height: 1.5;
         }
 
         .payment-detail-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 13px;
+            display: table;
+            width: 100%;
+            margin-bottom: 8px;
+            font-size: 12px;
         }
 
         .payment-label {
+            display: table-cell;
             color: #6b7280;
+            width: 100px;
         }
 
         .payment-value {
-            color: #000;
-            font-weight: 500;
+            display: table-cell;
+            color: #111827;
+            font-weight: 600;
         }
 
         .payment-value.success {
             color: #059669;
-            font-weight: bold;
         }
 
-        /* Service Description Table */
+        /* Service Table */
         .service-table {
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            border-collapse: collapse;
         }
 
         .table-header {
             background-color: #1e3a8a;
             color: white;
-            display: flex;
-            justify-content: space-between;
-            padding: 12px 20px;
-            font-size: 12px;
-            font-weight: bold;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .table-body {
-            border-left: 1px solid #e5e7eb;
-            border-right: 1px solid #e5e7eb;
+        .table-header td {
+            padding: 12px 20px;
         }
 
-        .service-row {
+        .service-row td {
             padding: 20px;
-            border-bottom: 1px solid #e5e7eb;
+            border: 1px solid #e5e7eb;
         }
 
         .service-title {
             font-size: 14px;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 5px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
         }
 
         .service-description {
-            font-size: 12px;
+            font-size: 11px;
             color: #6b7280;
         }
 
         .service-amount {
             font-size: 16px;
-            font-weight: bold;
-            color: #000;
+            font-weight: 700;
+            color: #111827;
             text-align: right;
         }
 
         /* Totals Section */
         .totals-section {
-            display: flex;
-            justify-content: flex-end;
+            display: table;
+            width: 100%;
             margin-bottom: 20px;
         }
 
         .totals-box {
-            width: 300px;
+            display: table-cell;
+            width: 100%;
+            text-align: right;
+        }
+
+        .total-item {
+            display: inline-block;
+            width: 250px;
+            text-align: left;
         }
 
         .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 20px;
-            font-size: 14px;
-        }
-
-        .total-row.subtotal {
-            border-top: 1px solid #e5e7eb;
-        }
-
-        .total-row.tax {
-            border-bottom: 2px solid #1e3a8a;
+            display: table;
+            width: 100%;
+            padding: 8px 0;
+            font-size: 13px;
         }
 
         .total-row.final {
-            background-color: #f9fafb;
-            font-weight: bold;
+            border-top: 2px solid #1e3a8a;
+            margin-top: 5px;
+            padding-top: 12px;
+            font-weight: 800;
             font-size: 16px;
             color: #1e3a8a;
-            margin-top: 5px;
         }
 
         .total-label {
-            color: #000;
+            display: table-cell;
+            color: #374151;
         }
 
         .total-value {
-            color: #000;
-            font-weight: 500;
+            display: table-cell;
+            text-align: right;
+            color: #111827;
         }
 
-        .total-value.final-amount {
+        .final-amount {
             color: #1e3a8a;
-            font-weight: bold;
         }
 
         /* In Words */
         .in-words {
             font-size: 11px;
-            color: #6b7280;
+            color: #4b5563;
             font-style: italic;
             margin-bottom: 30px;
+            padding: 12px;
+            background-color: #f9fafb;
+            border-radius: 4px;
         }
 
         .in-words-label {
-            font-weight: bold;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 9px;
+            color: #6b7280;
+            display: block;
+            margin-bottom: 4px;
         }
 
         /* Signature Section */
         .signature-section {
-            display: flex;
-            justify-content: flex-end;
+            display: table;
+            width: 100%;
             margin-bottom: 30px;
         }
 
         .signature-box {
-            text-align: center;
+            display: table-cell;
+            text-align: right;
         }
 
         .stamp {
-            width: 100px;
-            height: 100px;
-            margin-bottom: 10px;
+            width: 90px;
+            height: 90px;
+            margin-bottom: 8px;
+            opacity: 0.9;
         }
 
         .signature-line {
-            width: 200px;
-            border-top: 2px solid #000;
+            width: 180px;
+            border-top: 1px solid #111827;
+            display: inline-block;
             margin-bottom: 8px;
         }
 
         .signature-title {
             font-size: 12px;
-            font-weight: bold;
-            color: #000;
-            margin-bottom: 2px;
+            font-weight: 700;
+            color: #111827;
         }
 
         .signature-company {
-            font-size: 11px;
+            font-size: 10px;
             color: #6b7280;
         }
 
@@ -303,10 +321,12 @@
             color: #9ca3af;
             line-height: 1.6;
             margin-bottom: 30px;
+            border-left: 2px solid #e5e7eb;
+            padding-left: 15px;
         }
 
         .note-label {
-            font-weight: bold;
+            font-weight: 700;
             color: #6b7280;
         }
 
@@ -314,27 +334,24 @@
         .footer {
             text-align: center;
             padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid #f3f4f6;
         }
 
         .footer-address {
             font-size: 10px;
             color: #6b7280;
             margin-bottom: 15px;
+            font-weight: 500;
         }
 
         .footer-logos {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 30px;
             margin-bottom: 15px;
         }
 
         .footer-logo {
-            height: 50px;
-            opacity: 0.8;
-            image-rendering: -webkit-optimize-contrast;
+            height: 40px;
+            margin: 0 15px;
+            opacity: 0.7;
         }
 
         .footer-copyright {
@@ -343,15 +360,8 @@
         }
 
         @media print {
-            body {
-                background: white;
-                padding: 0;
-            }
-            
-            .receipt-container {
-                box-shadow: none;
-                page-break-after: avoid;
-            }
+            body { background: white; }
+            .receipt-container { border-width: 1px; }
         }
     </style>
 </head>
@@ -365,14 +375,13 @@
             </div>
             <div class="header-right">
                 <div class="receipt-title">RECEIPT</div>
-                <div class="receipt-number">NO: {{receiptNo}}</div>
+                <div class="receipt-number">TRANSACTION ID: {{receiptNo}}</div>
                 <div class="payment-verified">PAYMENT VERIFIED</div>
             </div>
         </div>
 
         <!-- Info Section -->
         <div class="info-section">
-            <!-- Received From -->
             <div class="info-box info-box-left">
                 <div class="info-heading">RECEIVED FROM</div>
                 <div class="company-name">{{name}}</div>
@@ -383,7 +392,6 @@
                 </div>
             </div>
 
-            <!-- Payment Information -->
             <div class="info-box info-box-right">
                 <div class="info-heading">PAYMENT INFORMATION</div>
                 <div class="payment-detail-row">
@@ -401,56 +409,53 @@
             </div>
         </div>
 
-        <!-- Service Description Table -->
-        <div class="service-table">
-            <div class="table-header">
-                <span>DESCRIPTION OF SERVICE</span>
-                <span>AMOUNT (INR)</span>
-            </div>
-            <div class="table-body">
-                <div class="service-row">
-                    <table style="width: 100%;">
-                        <tr>
-                            <td style="width: 70%;">
-                                <div class="service-title">Internship Program Enrollment Fee</div>
-                                <div class="service-description">Domain: {{role}} | Tenure: {{duration}} Month(s)</div>
-                            </td>
-                            <td style="width: 30%;">
-                                <div class="service-amount">₹{{amount}}.00</div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <!-- Service Table -->
+        <table class="service-table">
+            <tr class="table-header">
+                <td style="width: 70%;">DESCRIPTION OF SERVICE</td>
+                <td style="width: 30%; text-align: right;">AMOUNT (INR)</td>
+            </tr>
+            <tr class="service-row">
+                <td>
+                    <div class="service-title">Internship Program Enrollment Fee</div>
+                    <div class="service-description">Domain: {{role}} | Tenure: {{duration}} Month(s)</div>
+                </td>
+                <td>
+                    <div class="service-amount">₹{{amount}}.00</div>
+                </td>
+            </tr>
+        </table>
 
-        <!-- Totals Section -->
+        <!-- Totals & In Words -->
         <div class="totals-section">
             <div class="totals-box">
-                <div class="total-row subtotal">
-                    <span class="total-label">Base Amount</span>
-                    <span class="total-value">₹{{amount}}.00</span>
-                </div>
-                <div class="total-row tax">
-                    <span class="total-label">Tax (0% GST)</span>
-                    <span class="total-value">₹0.00</span>
-                </div>
-                <div class="total-row final">
-                    <span class="total-label">Total Paid</span>
-                    <span class="total-value final-amount">₹{{amount}}.00</span>
+                <div class="total-item">
+                    <div class="total-row">
+                        <span class="total-label">Base Amount</span>
+                        <span class="total-value">₹{{amount}}.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span class="total-label">Tax (0% GST)</span>
+                        <span class="total-value">₹0.00</span>
+                    </div>
+                    <div class="total-row final">
+                        <span class="total-label">Total Paid</span>
+                        <span class="total-value final-amount">₹{{amount}}.00</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- In Words -->
         <div class="in-words">
-            <span class="in-words-label">Amount in Words:</span> {{amountInWords}} Only
+            <span class="in-words-label">Amount in Words</span>
+            {{amountInWords}} Only
         </div>
 
         <!-- Signature Section -->
         <div class="signature-section">
             <div class="signature-box">
                 <img src="{{companyStamp}}" alt="Company Stamp" class="stamp">
+                <br>
                 <div class="signature-line"></div>
                 <div class="signature-title">Authorized Signatory</div>
                 <div class="signature-company">CodeOrbit Solutions</div>
@@ -461,7 +466,7 @@
         <div class="note-section">
             <span class="note-label">Note:</span> This is a computer-generated electronic receipt issued by CodeOrbit Solutions. 
             It confirms the successful payment of fees towards the professional internship program. For verification or 
-            accounting queries, please contact codeorbit.internship@gmail.com with your Receipt Number.
+            accounting queries, please contact codeorbit.internship@gmail.com.
         </div>
 
         <!-- Footer -->
@@ -474,7 +479,7 @@
                 <img src="{{aicteLogo}}" alt="AICTE" class="footer-logo">
             </div>
             <div class="footer-copyright">
-                © 2024 CodeOrbit Solutions. Professional Internship Program.
+                © 2024 CodeOrbit Solutions. All Rights Reserved.
             </div>
         </div>
     </div>
