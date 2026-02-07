@@ -6,6 +6,7 @@ const Activity = require("../models/Activity");
 const LMSActivityProgress = require("../models/LMSActivityProgress");
 const Enrollment = require("../models/Enrollment");
 const asyncHandler = require("../middleware/asyncHandler");
+const { updateEnrollmentProgress } = require("../utils/lmsHelpers");
 
 // @desc    Get my enrollments
 // @route   GET /api/lms/my-enrollments
@@ -126,6 +127,12 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
   }
 
   await progress.save();
+
+  // Trigger progress update if status is Completed
+  if (status === "Completed") {
+    await updateEnrollmentProgress(enrollment._id);
+  }
+
   res.json(progress);
 });
 

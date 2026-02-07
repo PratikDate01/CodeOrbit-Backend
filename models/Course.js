@@ -32,4 +32,15 @@ const courseSchema = new mongoose.Schema(
 // Index for ordering courses within a program
 courseSchema.index({ program: 1, order: 1 });
 
+// Cascade delete: delete modules when a course is deleted
+courseSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  const courseId = this._id;
+  const Module = mongoose.model("Module");
+  const modules = await Module.find({ course: courseId });
+  for (const moduleObj of modules) {
+    await moduleObj.deleteOne();
+  }
+  next();
+});
+
 module.exports = mongoose.model("Course", courseSchema);

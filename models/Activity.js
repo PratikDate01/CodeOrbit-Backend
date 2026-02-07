@@ -62,4 +62,12 @@ const activitySchema = new mongoose.Schema(
 // Index for ordering activities within a lesson
 activitySchema.index({ lesson: 1, order: 1 });
 
+// Cascade delete: delete activity progress when an activity is deleted
+activitySchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  const activityId = this._id;
+  const LMSActivityProgress = mongoose.model("LMSActivityProgress");
+  await LMSActivityProgress.deleteMany({ activity: activityId });
+  next();
+});
+
 module.exports = mongoose.model("Activity", activitySchema);

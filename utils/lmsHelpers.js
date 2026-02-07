@@ -60,26 +60,30 @@ const updateEnrollmentProgress = async (enrollmentId) => {
   const lessons = await Lesson.find({ module: { $in: moduleIds }, isPublished: true });
   const lessonIds = lessons.map(l => l._id);
 
-  const totalActivities = await Activity.countDocuments({ 
+  const requiredActivities = await Activity.find({ 
     lesson: { $in: lessonIds }, 
     isPublished: true,
     isRequired: true 
-  });
+  }).select("_id");
+  
+  const totalRequiredCount = requiredActivities.length;
+  const requiredActivityIds = requiredActivities.map(a => a._id);
 
-  if (totalActivities === 0) {
+  if (totalRequiredCount === 0) {
     enrollment.progress = 0;
     await enrollment.save();
     return;
   }
 
-  // 2. Get completed activities for this user
-  const completedActivitiesCount = await LMSActivityProgress.countDocuments({
+  // 2. Get completed REQUIRED activities for this user
+  const completedRequiredCount = await LMSActivityProgress.countDocuments({
     enrollment: enrollmentId,
+    activity: { $in: requiredActivityIds },
     status: "Completed"
   });
 
   // 3. Calculate percentage
-  const progressPercentage = (completedActivitiesCount / totalActivities) * 100;
+  const progressPercentage = (completedRequiredCount / totalRequiredCount) * 100;
   
   enrollment.progress = Math.min(Math.round(progressPercentage), 100);
   

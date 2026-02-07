@@ -104,12 +104,23 @@ const createCourse = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/lms/courses/:id
 // @access  Private/Admin
 const updateCourse = asyncHandler(async (req, res) => {
-  const course = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const course = await Course.findById(req.params.id);
   if (!course) {
     res.status(404);
     throw new Error("Course not found");
   }
-  res.json(course);
+
+  const updatedCourse = await Course.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "UPDATE_LMS_COURSE",
+    targetType: "Course",
+    targetId: course._id,
+    details: req.body,
+  });
+
+  res.json(updatedCourse);
 });
 
 // @desc    Delete a course
@@ -117,13 +128,22 @@ const updateCourse = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteCourse = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.params.id);
-  if (course) {
-    await course.deleteOne();
-    res.json({ message: "Course removed" });
-  } else {
+  if (!course) {
     res.status(404);
     throw new Error("Course not found");
   }
+
+  await course.deleteOne();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "DELETE_LMS_COURSE",
+    targetType: "Course",
+    targetId: req.params.id,
+    details: { title: course.title },
+  });
+
+  res.json({ message: "Course removed" });
 });
 
 // --- Module Controllers ---
@@ -158,12 +178,23 @@ const createModule = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/lms/modules/:id
 // @access  Private/Admin
 const updateModule = asyncHandler(async (req, res) => {
-  const moduleObj = await Module.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const moduleObj = await Module.findById(req.params.id);
   if (!moduleObj) {
     res.status(404);
     throw new Error("Module not found");
   }
-  res.json(moduleObj);
+
+  const updatedModule = await Module.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "UPDATE_LMS_MODULE",
+    targetType: "Module",
+    targetId: moduleObj._id,
+    details: req.body,
+  });
+
+  res.json(updatedModule);
 });
 
 // @desc    Delete a module
@@ -171,13 +202,22 @@ const updateModule = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteModule = asyncHandler(async (req, res) => {
   const moduleObj = await Module.findById(req.params.id);
-  if (moduleObj) {
-    await moduleObj.deleteOne();
-    res.json({ message: "Module removed" });
-  } else {
+  if (!moduleObj) {
     res.status(404);
     throw new Error("Module not found");
   }
+
+  await moduleObj.deleteOne();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "DELETE_LMS_MODULE",
+    targetType: "Module",
+    targetId: req.params.id,
+    details: { title: moduleObj.title },
+  });
+
+  res.json({ message: "Module removed" });
 });
 
 // --- Lesson Controllers ---
@@ -212,12 +252,23 @@ const createLesson = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/lms/lessons/:id
 // @access  Private/Admin
 const updateLesson = asyncHandler(async (req, res) => {
-  const lesson = await Lesson.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const lesson = await Lesson.findById(req.params.id);
   if (!lesson) {
     res.status(404);
     throw new Error("Lesson not found");
   }
-  res.json(lesson);
+
+  const updatedLesson = await Lesson.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "UPDATE_LMS_LESSON",
+    targetType: "Lesson",
+    targetId: lesson._id,
+    details: req.body,
+  });
+
+  res.json(updatedLesson);
 });
 
 // @desc    Delete a lesson
@@ -225,13 +276,22 @@ const updateLesson = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteLesson = asyncHandler(async (req, res) => {
   const lesson = await Lesson.findById(req.params.id);
-  if (lesson) {
-    await lesson.deleteOne();
-    res.json({ message: "Lesson removed" });
-  } else {
+  if (!lesson) {
     res.status(404);
     throw new Error("Lesson not found");
   }
+
+  await lesson.deleteOne();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "DELETE_LMS_LESSON",
+    targetType: "Lesson",
+    targetId: req.params.id,
+    details: { title: lesson.title },
+  });
+
+  res.json({ message: "Lesson removed" });
 });
 
 // --- Activity Controllers ---
@@ -265,12 +325,23 @@ const createActivity = asyncHandler(async (req, res) => {
 // @route   PUT /api/admin/lms/activities/:id
 // @access  Private/Admin
 const updateActivity = asyncHandler(async (req, res) => {
-  const activity = await Activity.findByIdAndUpdate(req.params.id, req.body, { new: true });
+  const activity = await Activity.findById(req.params.id);
   if (!activity) {
     res.status(404);
     throw new Error("Activity not found");
   }
-  res.json(activity);
+
+  const updatedActivity = await Activity.findByIdAndUpdate(req.params.id, req.body, { new: true });
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "UPDATE_LMS_ACTIVITY",
+    targetType: "Activity",
+    targetId: activity._id,
+    details: req.body,
+  });
+
+  res.json(updatedActivity);
 });
 
 // @desc    Delete an activity
@@ -278,13 +349,22 @@ const updateActivity = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const deleteActivity = asyncHandler(async (req, res) => {
   const activity = await Activity.findById(req.params.id);
-  if (activity) {
-    await activity.deleteOne();
-    res.json({ message: "Activity removed" });
-  } else {
+  if (!activity) {
     res.status(404);
     throw new Error("Activity not found");
   }
+
+  await activity.deleteOne();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "DELETE_LMS_ACTIVITY",
+    targetType: "Activity",
+    targetId: req.params.id,
+    details: { title: activity.title },
+  });
+
+  res.json({ message: "Activity removed" });
 });
 
 // --- Approval Controllers ---
