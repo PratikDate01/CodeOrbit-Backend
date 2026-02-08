@@ -28,48 +28,49 @@
             max-width: 190mm;
             margin: 0 auto;
             background: white;
-            padding: 25px;
+            padding: 40px;
             border: 2px solid #1e3a8a;
             position: relative;
+            min-height: 270mm; /* Ensure it looks full page */
         }
 
         /* Header Section */
         .header {
             display: table;
             width: 100%;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #f3f4f6;
-            padding-bottom: 15px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #1e3a8a;
+            padding-bottom: 20px;
         }
 
         .header-left {
             display: table-cell;
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         .logo {
-            width: 60px;
-            height: 60px;
-            margin-bottom: 8px;
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
             image-rendering: -webkit-optimize-contrast;
         }
 
         .tagline {
-            font-size: 9px;
+            font-size: 11px;
             color: #6b7280;
             text-transform: uppercase;
-            letter-spacing: 1.2px;
-            font-weight: 600;
+            letter-spacing: 1.5px;
+            font-weight: 700;
         }
 
         .header-right {
             display: table-cell;
-            vertical-align: top;
+            vertical-align: middle;
             text-align: right;
         }
 
         .receipt-title {
-            font-size: 28px;
+            font-size: 36px;
             font-weight: 900;
             color: #1e3a8a;
             margin-bottom: 4px;
@@ -77,29 +78,31 @@
         }
 
         .receipt-number {
-            font-size: 10px;
-            color: #6b7280;
-            margin-bottom: 8px;
+            font-size: 12px;
+            color: #4b5563;
+            margin-bottom: 12px;
             font-family: monospace;
+            font-weight: 600;
         }
 
         .payment-verified {
             background-color: #10b981;
             color: #ffffff;
-            padding: 4px 10px;
-            font-size: 9px;
+            padding: 6px 14px;
+            font-size: 11px;
             font-weight: 800;
-            border-radius: 4px;
+            border-radius: 6px;
             display: inline-block;
             text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
         }
 
         /* Info Section */
         .info-section {
             display: table;
             width: 100%;
-            margin-top: 15px;
-            margin-bottom: 15px;
+            margin-top: 30px;
+            margin-bottom: 30px;
             table-layout: fixed;
         }
 
@@ -111,54 +114,56 @@
 
         .info-box-left {
             background-color: #f8fafc;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
         }
 
         .info-box-right {
-            padding: 15px;
+            padding: 25px;
             padding-right: 0;
         }
 
         .info-heading {
-            font-size: 10px;
+            font-size: 12px;
             color: #b45309;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 12px;
+            letter-spacing: 1.2px;
+            margin-bottom: 15px;
         }
 
         .company-name {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 800;
             color: #1e3a8a;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
         }
 
         .company-details {
-            font-size: 10px;
-            color: #4b5563;
-            line-height: 1.4;
+            font-size: 12px;
+            color: #374151;
+            line-height: 1.6;
         }
 
         .payment-detail-row {
             display: table;
             width: 100%;
-            margin-bottom: 8px;
-            font-size: 12px;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
 
         .payment-label {
             display: table-cell;
             color: #6b7280;
-            width: 100px;
+            width: 120px;
+            font-weight: 500;
         }
 
         .payment-value {
             display: table-cell;
             color: #111827;
-            font-weight: 600;
+            font-weight: 700;
         }
 
         .payment-value.success {
@@ -168,42 +173,45 @@
         /* Service Table */
         .service-table {
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 30px;
             border-collapse: collapse;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
 
         .table-header {
             background-color: #1e3a8a;
             color: white;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 12px;
+            font-weight: 800;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .table-header td {
-            padding: 10px 15px;
+            padding: 15px 20px;
         }
 
         .service-row td {
-            padding: 12px 15px;
+            padding: 25px 20px;
             border: 1px solid #e5e7eb;
         }
 
         .service-title {
-            font-size: 13px;
-            font-weight: 700;
+            font-size: 16px;
+            font-weight: 800;
             color: #111827;
-            margin-bottom: 3px;
+            margin-bottom: 6px;
         }
 
         .service-description {
-            font-size: 10px;
-            color: #6b7280;
+            font-size: 12px;
+            color: #4b5563;
+            font-weight: 500;
         }
 
         .service-amount {
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 18px;
+            font-weight: 800;
             color: #111827;
             text-align: right;
         }
@@ -212,7 +220,7 @@
         .totals-section {
             display: table;
             width: 100%;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
         }
 
         .totals-box {
@@ -223,23 +231,23 @@
 
         .total-item {
             display: inline-block;
-            width: 220px;
+            width: 280px;
             text-align: left;
         }
 
         .total-row {
             display: table;
             width: 100%;
-            padding: 5px 0;
-            font-size: 12px;
+            padding: 8px 0;
+            font-size: 14px;
         }
 
         .total-row.final {
             border-top: 2px solid #1e3a8a;
-            margin-top: 5px;
-            padding-top: 10px;
-            font-weight: 800;
-            font-size: 15px;
+            margin-top: 10px;
+            padding-top: 15px;
+            font-weight: 900;
+            font-size: 20px;
             color: #1e3a8a;
         }
 
@@ -260,103 +268,129 @@
 
         /* In Words */
         .in-words {
-            font-size: 10px;
-            color: #4b5563;
+            font-size: 12px;
+            color: #1e293b;
             font-style: italic;
-            margin-bottom: 15px;
-            padding: 8px 12px;
-            background-color: #f9fafb;
-            border-radius: 4px;
+            margin-bottom: 40px;
+            padding: 15px 20px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #1e3a8a;
+            font-weight: 500;
         }
 
         .in-words-label {
-            font-weight: 700;
+            font-weight: 800;
             text-transform: uppercase;
-            font-size: 8px;
-            color: #6b7280;
+            font-size: 10px;
+            color: #64748b;
             display: block;
-            margin-bottom: 2px;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
         }
 
         /* Signature Section */
         .signature-section {
             display: table;
             width: 100%;
-            margin-bottom: 15px;
+            margin-top: 50px;
+            margin-bottom: 40px;
         }
 
         .signature-box {
             display: table-cell;
             text-align: right;
+            position: relative; /* For absolute stamp positioning */
+            padding-right: 20px;
+        }
+
+        .stamp-container {
+            position: relative;
+            display: inline-block;
+            text-align: center;
         }
 
         .stamp {
-            width: 70px;
-            height: 70px;
-            margin-bottom: 6px;
-            opacity: 0.9;
+            position: absolute;
+            width: 110px;
+            height: 110px;
+            top: -95px; /* Position it above the line */
+            left: 50%;
+            transform: translateX(-50%) rotate(-5deg); /* Professional tilt */
+            opacity: 0.85;
+            z-index: 1;
+            pointer-events: none;
         }
 
         .signature-line {
-            width: 160px;
-            border-top: 1px solid #111827;
-            display: inline-block;
-            margin-bottom: 6px;
+            width: 220px;
+            border-top: 2px solid #111827;
+            display: block;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 2;
         }
 
         .signature-title {
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 14px;
+            font-weight: 800;
             color: #111827;
+            margin-bottom: 2px;
         }
 
         .signature-company {
-            font-size: 9px;
-            color: #6b7280;
+            font-size: 12px;
+            color: #4b5563;
+            font-weight: 600;
         }
 
         /* Note Section */
         .note-section {
-            font-size: 9px;
-            color: #9ca3af;
-            line-height: 1.5;
-            margin-bottom: 15px;
-            border-left: 2px solid #e5e7eb;
-            padding-left: 12px;
+            font-size: 11px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            border-left: 3px solid #cbd5e1;
+            padding-left: 15px;
+            font-weight: 500;
         }
 
         .note-label {
-            font-weight: 700;
-            color: #6b7280;
+            font-weight: 800;
+            color: #475569;
         }
 
         /* Footer */
         .footer {
             text-align: center;
-            padding-top: 15px;
-            border-top: 1px solid #f3f4f6;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
         }
 
         .footer-address {
-            font-size: 9px;
-            color: #6b7280;
-            margin-bottom: 10px;
-            font-weight: 500;
+            font-size: 11px;
+            color: #475569;
+            margin-bottom: 15px;
+            font-weight: 600;
         }
 
         .footer-logos {
-            margin-bottom: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
         }
 
         .footer-logo {
-            height: 35px;
-            margin: 0 12px;
-            opacity: 0.7;
+            height: 45px;
+            opacity: 0.9;
         }
 
         .footer-copyright {
-            font-size: 8px;
-            color: #9ca3af;
+            font-size: 10px;
+            color: #94a3b8;
+            font-weight: 500;
         }
 
         @media print {
@@ -454,10 +488,12 @@
         <!-- Signature Section -->
         <div class="signature-section">
             <div class="signature-box">
-                <img src="{{companyStamp}}" alt="Company Stamp" class="stamp">
-                <div class="signature-line"></div>
-                <div class="signature-title">Authorized Signatory</div>
-                <div class="signature-company">CodeOrbit Solutions</div>
+                <div class="stamp-container">
+                    <img src="{{companyStamp}}" alt="Company Stamp" class="stamp">
+                    <div class="signature-line"></div>
+                    <div class="signature-title">Authorized Signatory</div>
+                    <div class="signature-company">CodeOrbit Solutions</div>
+                </div>
             </div>
         </div>
 
