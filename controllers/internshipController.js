@@ -20,6 +20,11 @@ const getPublishedPrograms = asyncHandler(async (req, res) => {
 const applyForInternship = asyncHandler(async (req, res) => {
   const { preferredDomain, duration, amount, formData } = req.body;
 
+  if (!preferredDomain) {
+    res.status(400);
+    throw new Error("Preferred domain is required.");
+  }
+
   // Check if user already has a pending or active application for this domain
   const existingApp = await InternshipApplication.findOne({
     user: req.user._id,
@@ -39,32 +44,44 @@ const applyForInternship = asyncHandler(async (req, res) => {
 
   // Sanitize and extract only needed fields from formData to prevent mass assignment
   const { 
-    name, email, phone, college, graduationYear, 
-    city, state, country, githubProfile, linkedinProfile 
+    name, email, phone, college, course, year, skills, experience
   } = formData || {};
 
-  const application = await InternshipApplication.create({
-    name,
-    email,
-    phone,
-    college,
-    graduationYear,
-    city,
-    state,
-    country,
-    githubProfile,
-    linkedinProfile,
-    preferredDomain,
-    duration,
-    amount: finalAmount,
-    user: req.user._id,
-    status: "New"
-  });
+  // Manual validation to ensure specific error messages and 400 status
+  if (!name || !email || !phone || !course || !year || !skills) {
+    res.status(400);
+    throw new Error("Please provide all required fields: name, email, phone, course, year, and skills.");
+  }
 
-  res.status(201).json({
-    message: "Application submitted successfully",
-    application
-  });
+  try {
+    const application = await InternshipApplication.create({
+      name,
+      email,
+      phone,
+      college: college || "Not Provided",
+      course,
+      year,
+      skills,
+      experience,
+      preferredDomain,
+      duration,
+      amount: finalAmount,
+      user: req.user._id,
+      status: "New"
+    });
+
+    res.status(201).json({
+      message: "Application submitted successfully",
+      application
+    });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      res.status(400);
+      const message = Object.values(error.errors).map((val) => val.message).join(", ");
+      throw new Error(message);
+    }
+    throw error;
+  }
 });
 
 // @desc    Get all internship applications

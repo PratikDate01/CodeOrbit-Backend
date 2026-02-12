@@ -20,15 +20,15 @@ const internshipApplicationSchema = mongoose.Schema(
     },
     course: {
       type: String,
-      required: true,
+      required: [true, "Course/Degree is required"],
     },
     year: {
       type: String,
-      required: true,
+      required: [true, "Year of study is required"],
     },
     skills: {
       type: String,
-      required: true,
+      required: [true, "Skills are required"],
     },
     experience: {
       type: String,
