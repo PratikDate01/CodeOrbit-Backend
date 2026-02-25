@@ -55,7 +55,7 @@ const getDocData = async (application, verificationId) => {
     endDate: formatDate(application.endDate),
     date: formatDate(application.documentIssueDate || new Date()),
     verificationId,
-    verificationUrl: "verify.codeorbit.in",
+    verificationUrl: "",
     qrCode: qrCodeDataUrl,
     companyLogo: getBase64Image("assets/logos/Company Logo.png"),
     aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),

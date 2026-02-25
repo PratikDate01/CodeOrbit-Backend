@@ -29,7 +29,6 @@ const allowedOrigins = [
   "https://code-orbit-tech.vercel.app",
   "https://www.code-orbit-tech.vercel.app",
   "https://codeorbit.in",
-  "https://www.codeorbit.in",
   "http://localhost:3000"
 ].filter(Boolean).map(url => url.toLowerCase().replace(/\/$/, ""));
 
