@@ -56,7 +56,7 @@ const validateCoupon = asyncHandler(async (req, res) => {
 
   // Ensure amount is set
   if (!application.amount || application.amount === 0) {
-    application.amount = application.duration === 1 ? 399 : application.duration === 3 ? 599 : 999;
+    application.amount = application.duration === 1 ? 599 : application.duration === 3 ? 999 : 1499;
     await application.save();
   }
 
@@ -108,7 +108,7 @@ const createOrder = asyncHandler(async (req, res) => {
 
   // Ensure amount is set
   if (!application.amount || application.amount === 0) {
-    application.amount = application.duration === 1 ? 399 : application.duration === 3 ? 599 : 999;
+    application.amount = application.duration === 1 ? 599 : application.duration === 3 ? 999 : 1499;
     await application.save();
   }
 
