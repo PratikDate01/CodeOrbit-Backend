@@ -36,6 +36,12 @@ const documentSchema = mongoose.Schema(
     paymentSlipPublicId: {
       type: String,
     },
+    internshipDetailsUrl: {
+      type: String,
+    },
+    internshipDetailsPublicId: {
+      type: String,
+    },
     verificationId: {
       type: String,
       unique: true,
@@ -56,6 +62,10 @@ const documentSchema = mongoose.Schema(
     paymentSlipVisible: {
       type: Boolean,
       default: true,
+    },
+    internshipDetailsVisible: {
+      type: Boolean,
+      default: false,
     },
     issuedOn: {
       type: Date,

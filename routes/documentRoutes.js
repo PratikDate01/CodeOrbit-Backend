@@ -5,6 +5,7 @@ const {
   generateOfferLetter, 
   generateCertificate, 
   generateLOC, 
+  generateInternshipDetails,
   toggleVisibility, 
   getDocuments,
   getDocumentByVerificationId, 
@@ -14,6 +15,7 @@ const {
 router.post("/generate/offer-letter", protect, admin, generateOfferLetter);
 router.post("/generate/certificate", protect, admin, generateCertificate);
 router.post("/generate/loc", protect, admin, generateLOC);
+router.post("/generate/internship-details", protect, admin, generateInternshipDetails);
 router.patch("/visibility", protect, admin, toggleVisibility);
 router.get("/application/:applicationId", protect, getDocuments);
 router.post("/generate-payment-slip", protect, admin, generatePaymentSlip);

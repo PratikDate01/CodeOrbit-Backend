@@ -269,6 +269,7 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
       if (!documents.certificateVisible) delete documents.certificateUrl;
       if (!documents.locVisible) delete documents.locUrl;
       if (!documents.paymentSlipVisible) delete documents.paymentSlipUrl;
+      if (!documents.internshipDetailsVisible) delete documents.internshipDetailsUrl;
     }
 
     return { ...app, documents };

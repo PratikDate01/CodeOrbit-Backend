@@ -171,6 +171,35 @@ const generateLOC = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, url: upload.secure_url });
 });
 
+const generateInternshipDetails = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+
+  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+  const docData = await getDocData(application, document.verificationId);
+
+  const buffer = await generatePDF("internshipdetails", docData, { margin: { top: "0", bottom: "0" } });
+  const upload = await uploadBufferToCloudinary(buffer, "documents/internship_details", `internship_details_${applicationId}`);
+
+  document.internshipDetailsUrl = upload.secure_url;
+  document.internshipDetailsPublicId = upload.public_id;
+  document.internshipDetailsVisible = true; // Auto-show after generation
+  await document.save();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "GENERATE_INTERNSHIP_DETAILS",
+    targetType: "InternshipApplication",
+    targetId: applicationId,
+  });
+
+  res.status(200).json({ success: true, url: upload.secure_url });
+});
+
 const toggleVisibility = asyncHandler(async (req, res) => {
   const { applicationId, type, visible } = req.body;
   const document = await Document.findOne({ applicationId });
@@ -284,6 +313,7 @@ module.exports = {
   generateOfferLetter,
   generateCertificate,
   generateLOC,
+  generateInternshipDetails,
   toggleVisibility,
   getDocuments,
   getDocumentByVerificationId,
