@@ -36,6 +36,10 @@ const lmsActivityProgressSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    xpEarned: {
+      type: Number,
+      default: 0,
+    },
     adminApproval: {
       isApproved: { type: Boolean, default: false },
       approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

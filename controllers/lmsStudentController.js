@@ -5,17 +5,46 @@ const Lesson = require("../models/Lesson");
 const Activity = require("../models/Activity");
 const LMSActivityProgress = require("../models/LMSActivityProgress");
 const Enrollment = require("../models/Enrollment");
+const User = require("../models/User");
 const asyncHandler = require("../middleware/asyncHandler");
 const { updateEnrollmentProgress } = require("../utils/lmsHelpers");
 
-// @desc    Get my enrollments
+// @desc    Get my enrollments with current module info
 // @route   GET /api/lms/my-enrollments
 // @access  Private
 const getMyEnrollments = asyncHandler(async (req, res) => {
   const enrollments = await Enrollment.find({ user: req.user._id })
     .populate("program")
     .sort({ createdAt: -1 });
-  res.json(enrollments);
+
+  // Add current module info for each enrollment
+  const enrollmentsWithModule = await Promise.all(enrollments.map(async (enrollment) => {
+    // Find the last completed or started activity for this enrollment
+    const lastProgress = await LMSActivityProgress.findOne({
+      enrollment: enrollment._id
+    }).sort({ updatedAt: -1 }).populate({
+      path: 'activity',
+      populate: { path: 'lesson', populate: { path: 'module' } }
+    });
+
+    const enrollmentObj = enrollment.toObject();
+    
+    if (lastProgress && lastProgress.activity && lastProgress.activity.lesson) {
+      enrollmentObj.currentModule = lastProgress.activity.lesson.module;
+      enrollmentObj.lastActivityTitle = lastProgress.activity.title;
+    } else {
+      // If no progress, find the first module of the program
+      const firstCourse = await Course.findOne({ program: enrollment.program._id }).sort({ order: 1 });
+      if (firstCourse) {
+        const firstModule = await Module.findOne({ course: firstCourse._id }).sort({ order: 1 });
+        enrollmentObj.currentModule = firstModule;
+      }
+    }
+    
+    return enrollmentObj;
+  }));
+
+  res.json(enrollmentsWithModule);
 });
 
 // @desc    Get program details (if enrolled)
@@ -67,7 +96,8 @@ const getCourseContent = asyncHandler(async (req, res) => {
 
   // Get all activities for these lessons
   const lessonIds = lessons.map(l => l._id);
-  const activities = await Activity.find({ lesson: { $in: lessonIds } }).sort({ order: 1 });
+  const activities = await Activity.find({ lesson: { $in: lessonIds } })
+    .populate("task");
 
   // Get user progress for these activities
   const progress = await LMSActivityProgress.find({
@@ -75,7 +105,53 @@ const getCourseContent = asyncHandler(async (req, res) => {
     activity: { $in: activities.map(a => a._id) },
   });
 
-  res.json({ modules, lessons, activities, progress });
+  // Sort activities based on hierarchy: Module Order -> Lesson Order -> Activity Order
+  const moduleOrderMap = {};
+  modules.forEach(m => moduleOrderMap[m._id.toString()] = m.order);
+
+  const lessonDataMap = {};
+  lessons.forEach(l => {
+    lessonDataMap[l._id.toString()] = {
+      moduleOrder: moduleOrderMap[l.module.toString()] || 0,
+      lessonOrder: l.order
+    };
+  });
+
+  activities.sort((a, b) => {
+    const dataA = lessonDataMap[a.lesson.toString()];
+    const dataB = lessonDataMap[b.lesson.toString()];
+    
+    if (dataA.moduleOrder !== dataB.moduleOrder) {
+      return dataA.moduleOrder - dataB.moduleOrder;
+    }
+    if (dataA.lessonOrder !== dataB.lessonOrder) {
+      return dataA.lessonOrder - dataB.lessonOrder;
+    }
+    return a.order - b.order;
+  });
+
+  // IMPLEMENT SEQUENTIAL LOCKING LOGIC
+  let previousCompleted = true; // First activity is always unlocked
+  const activitiesWithLock = activities.map((activity) => {
+    const activityProgress = progress.find(p => p.activity.toString() === activity._id.toString());
+    const isCompleted = activityProgress?.status === "Completed";
+    
+    // An activity is locked if the previous one was NOT completed
+    const isLocked = !previousCompleted;
+    
+    // Update for next iteration: only REQUIRED activities block the next one
+    if (activity.isRequired) {
+      previousCompleted = isCompleted;
+    }
+
+    return {
+      ...activity.toObject(),
+      isLocked,
+      isCompleted
+    };
+  });
+
+  res.json({ modules, lessons, activities: activitiesWithLock, progress });
 });
 
 // @desc    Update activity progress
@@ -127,6 +203,19 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
   }
 
   await progress.save();
+  
+  // Award XP if completed
+  if (status === "Completed") {
+    const activity = await Activity.findById(progress.activity);
+    if (activity && activity.xpPoints > 0 && progress.xpEarned === 0) {
+      progress.xpEarned = activity.xpPoints;
+      await progress.save();
+      
+      await User.findByIdAndUpdate(req.user._id, {
+        $inc: { totalXP: activity.xpPoints }
+      });
+    }
+  }
 
   // Trigger progress update if status is Completed
   if (status === "Completed") {

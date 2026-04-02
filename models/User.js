@@ -38,6 +38,10 @@ const userSchema = new mongoose.Schema(
     skills: {
       type: [String],
     },
+    totalXP: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,

@@ -5,6 +5,7 @@ const Lesson = require("../models/Lesson");
 const Activity = require("../models/Activity");
 const LMSActivityProgress = require("../models/LMSActivityProgress");
 const Enrollment = require("../models/Enrollment");
+const User = require("../models/User");
 const LMSCertificate = require("../models/LMSCertificate");
 const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
@@ -392,9 +393,20 @@ const approveActivityProgress = asyncHandler(async (req, res) => {
 
   await progress.save();
 
-  // If approved, update overall enrollment progress
+  // If approved, update overall enrollment progress and award XP
   if (status === "Completed") {
     await updateEnrollmentProgress(progress.enrollment._id);
+    
+    // Award XP
+    const activity = await Activity.findById(progress.activity);
+    if (activity && activity.xpPoints > 0 && progress.xpEarned === 0) {
+      progress.xpEarned = activity.xpPoints;
+      await progress.save();
+      
+      await User.findByIdAndUpdate(progress.user, {
+        $inc: { totalXP: activity.xpPoints }
+      });
+    }
   }
 
   await AuditLog.create({
@@ -441,6 +453,41 @@ const issueCertificate = asyncHandler(async (req, res) => {
   if (enrollment.progress < 100) {
     res.status(400);
     throw new Error("Program not yet completed (Progress < 100%)");
+  }
+
+  // VALIDATION: Check if all REQUIRED activities meet passing criteria
+  const courses = await Course.find({ program: enrollment.program._id, isPublished: true });
+  const courseIds = courses.map(c => c._id);
+  const modules = await Module.find({ course: { $in: courseIds }, isPublished: true });
+  const moduleIds = modules.map(m => m._id);
+  const lessons = await Lesson.find({ module: { $in: moduleIds }, isPublished: true });
+  const lessonIds = lessons.map(l => l._id);
+  
+  const requiredActivities = await Activity.find({ 
+    lesson: { $in: lessonIds }, 
+    isPublished: true,
+    isRequired: true 
+  });
+
+  const progressRecords = await LMSActivityProgress.find({
+    enrollment: enrollment._id,
+    activity: { $in: requiredActivities.map(a => a._id) }
+  });
+
+  // Check if every required activity has a record, is completed, and passed
+  for (const activity of requiredActivities) {
+    const record = progressRecords.find(p => p.activity.toString() === activity._id.toString());
+    
+    if (!record || record.status !== "Completed") {
+      res.status(400);
+      throw new Error(`Required activity "${activity.title}" is not completed.`);
+    }
+
+    // Performance check
+    if (record.marks < activity.passingScore) {
+      res.status(400);
+      throw new Error("Student has not met minimum passing criteria");
+    }
   }
 
   // Check if certificate already exists

@@ -14,8 +14,12 @@ const activitySchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["Video", "PDF", "Text", "ExternalLink", "Quiz", "Assignment", "Reflection"],
+      enum: ["Video", "PDF", "Text", "ExternalLink", "Quiz", "Assignment", "Task", "Reflection"],
       required: true,
+    },
+    task: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
     },
     content: {
       type: String, // URL for Video/PDF/Link, or HTML/Markdown for Text
@@ -41,9 +45,13 @@ const activitySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    passingScore: {
+    xpPoints: {
       type: Number,
       default: 0,
+    },
+    passingScore: {
+      type: Number,
+      default: 60,
     },
     maxMarks: {
       type: Number,
