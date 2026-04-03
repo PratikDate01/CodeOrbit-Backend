@@ -237,7 +237,8 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
 // @route   POST /api/lms/quiz/submit
 // @access  Private
 const submitQuiz = asyncHandler(async (req, res) => {
-  const { activityId, answers } = req.body; // activityId and Array of answers
+  const activityId = req.body.activityId || req.params.id;
+  const { answers } = req.body; // Array of answers
 
   if (!activityId || !answers || !Array.isArray(answers)) {
     res.status(400);
@@ -293,7 +294,7 @@ const submitQuiz = asyncHandler(async (req, res) => {
     }
   });
 
-  const score = (correctCount / questions.length) * 100;
+  const score = questions.length > 0 ? (correctCount / questions.length) * 100 : 0;
   const passed = score >= (activity.passingScore || 60);
 
   let progress = await LMSActivityProgress.findOne({
