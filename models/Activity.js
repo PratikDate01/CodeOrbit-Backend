@@ -24,6 +24,21 @@ const activitySchema = new mongoose.Schema(
     content: {
       type: String, // URL for Video/PDF/Link, or HTML/Markdown for Text
     },
+    // Quiz / Assignment Fields
+    questions: [
+      {
+        question: String,
+        options: [String],
+        correctAnswer: Number, // Index of the correct option
+      }
+    ],
+    instructions: {
+      type: String,
+    },
+    passingScore: {
+      type: Number,
+      default: 60,
+    },
     quizData: [
       {
         question: String,
@@ -48,10 +63,6 @@ const activitySchema = new mongoose.Schema(
     xpPoints: {
       type: Number,
       default: 0,
-    },
-    passingScore: {
-      type: Number,
-      default: 60,
     },
     maxMarks: {
       type: Number,

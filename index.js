@@ -114,6 +114,7 @@ app.use("/api/applications", require("./routes/applicationRoutes"));
 app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/admin/lms", require("./routes/lmsAdminRoutes"));
 app.use("/api/lms", require("./routes/lmsStudentRoutes"));
+app.use("/api/lms/assignment", require("./routes/assignmentRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));

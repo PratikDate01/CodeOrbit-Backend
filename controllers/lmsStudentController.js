@@ -195,8 +195,16 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
   // If activity is a Quiz or Assignment, status might be 'Submitted' or 'Pending Approval'
   // Auto-complete if it's Text or Video (depending on criteria)
   progress.status = status || progress.status;
+  
   if (progressData) {
-    progress.progressData = { ...progress.progressData, ...progressData };
+    if (!progress.progressData) {
+      progress.progressData = {
+        watchTime: 0,
+        percentageWatched: 0,
+        quizAttempts: 0,
+      };
+    }
+    progress.progressData = { ...progress.progressData.toObject(), ...progressData };
   }
   if (submissionContent) {
     progress.submissionContent = submissionContent;
@@ -226,11 +234,17 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
 });
 
 // @desc    Submit quiz
-// @route   POST /api/lms/activities/:id/submit-quiz
+// @route   POST /api/lms/quiz/submit
 // @access  Private
 const submitQuiz = asyncHandler(async (req, res) => {
-  const { answers } = req.body; // Array of answers
-  const activity = await Activity.findById(req.params.id).populate({
+  const { activityId, answers } = req.body; // activityId and Array of answers
+
+  if (!activityId || !answers || !Array.isArray(answers)) {
+    res.status(400);
+    throw new Error("Activity ID and answers are required and must be an array");
+  }
+
+  const activity = await Activity.findById(activityId).populate({
     path: "lesson",
     populate: { path: "module", populate: { path: "course" } }
   });
@@ -238,6 +252,13 @@ const submitQuiz = asyncHandler(async (req, res) => {
   if (!activity || activity.type !== "Quiz") {
     res.status(404);
     throw new Error("Quiz not found");
+  }
+
+  const questions = activity.questions && activity.questions.length > 0 ? activity.questions : activity.quizData;
+
+  if (!questions || questions.length === 0) {
+    res.status(400);
+    throw new Error("This quiz has no questions");
   }
 
   const enrollment = await Enrollment.findOne({
@@ -252,13 +273,28 @@ const submitQuiz = asyncHandler(async (req, res) => {
 
   // Calculate score
   let correctCount = 0;
-  activity.quizData.forEach((q, index) => {
-    if (answers[index] === q.correctAnswer) {
+  questions.forEach((q, index) => {
+    const userAnswer = answers[index];
+    const correctAnswer = q.correctAnswer;
+
+    // Handle index-based comparison (New System)
+    if (typeof correctAnswer === 'number' || !isNaN(correctAnswer)) {
+      if (userAnswer == correctAnswer) {
+        correctCount++;
+      }
+    } 
+    // Handle text-based comparison (Old System)
+    else if (userAnswer === correctAnswer) {
+      correctCount++;
+    }
+    // Handle case where user submits index but correct answer is text
+    else if (typeof userAnswer === 'number' && q.options && q.options[userAnswer] === correctAnswer) {
       correctCount++;
     }
   });
 
-  const score = (correctCount / activity.quizData.length) * 100;
+  const score = (correctCount / questions.length) * 100;
+  const passed = score >= (activity.passingScore || 60);
 
   let progress = await LMSActivityProgress.findOne({
     enrollment: enrollment._id,
@@ -273,19 +309,51 @@ const submitQuiz = asyncHandler(async (req, res) => {
     });
   }
 
-  progress.status = "Pending Approval";
+  if (!progress.progressData) {
+    progress.progressData = {
+      quizAttempts: 0,
+      lastAttemptDate: Date.now()
+    };
+  }
+
+  progress.status = passed ? "Completed" : "Rejected";
   progress.marks = score;
   progress.progressData.quizAttempts = (progress.progressData.quizAttempts || 0) + 1;
   progress.progressData.lastAttemptDate = Date.now();
   progress.submissionContent = JSON.stringify(answers);
 
+  // Award XP if completed
+  if (progress.status === "Completed" && activity.xpPoints > 0 && (!progress.xpEarned || progress.xpEarned === 0)) {
+    progress.xpEarned = activity.xpPoints;
+    await User.findByIdAndUpdate(req.user._id, {
+      $inc: { totalXP: activity.xpPoints }
+    });
+  }
+
   await progress.save();
 
+  // Trigger enrollment progress update if passed
+  if (passed) {
+    await updateEnrollmentProgress(enrollment._id);
+  }
+
   res.json({
-    message: "Quiz submitted successfully. Pending admin approval.",
     score,
+    passed,
     status: progress.status,
   });
+});
+
+// @desc    Get activity details
+// @route   GET /api/lms/activities/:id
+// @access  Private
+const getActivityById = asyncHandler(async (req, res) => {
+  const activity = await Activity.findById(req.params.id);
+  if (!activity) {
+    res.status(404);
+    throw new Error("Activity not found");
+  }
+  res.json(activity);
 });
 
 module.exports = {
