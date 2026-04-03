@@ -362,4 +362,5 @@ module.exports = {
   getCourseContent,
   updateActivityProgress,
   submitQuiz,
+  getActivityById,
 };
