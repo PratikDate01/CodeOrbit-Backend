@@ -1,5 +1,6 @@
 const Document = require("../models/Document");
 const InternshipApplication = require("../models/InternshipApplication");
+const Attendance = require("../models/Attendance");
 const ActivityProgress = require("../models/ActivityProgress");
 const AuditLog = require("../models/AuditLog");
 const { generatePDF } = require("../utils/pdfGenerator");
@@ -200,6 +201,50 @@ const generateInternshipDetails = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, url: upload.secure_url });
 });
 
+const generateAttendanceDocument = asyncHandler(async (req, res) => {
+  const { applicationId } = req.body;
+  const application = await InternshipApplication.findById(applicationId).populate("user");
+  if (!application) {
+    res.status(404);
+    throw new Error("Application not found");
+  }
+
+  const attendance = await Attendance.findOne({ internshipId: applicationId });
+  if (!attendance) {
+    res.status(404);
+    throw new Error("Attendance record not found. Please save attendance first.");
+  }
+
+  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+  const commonData = await getDocData(application, document.verificationId);
+
+  const docData = {
+    ...commonData,
+    weeks: attendance.weeks,
+    totalWorkingDays: attendance.totalWorkingDays,
+    totalPresentDays: attendance.totalPresentDays,
+    attendancePercentage: attendance.overallPercentage,
+    attendanceStatus: attendance.status,
+  };
+
+  const buffer = await generatePDF("attendanceRecord", docData, { margin: { top: "0", bottom: "0" } });
+  const upload = await uploadBufferToCloudinary(buffer, "documents/attendance", `attendance_${applicationId}`);
+
+  document.attendanceUrl = upload.secure_url;
+  document.attendancePublicId = upload.public_id;
+  document.attendanceVisible = true; // Auto-show after generation
+  await document.save();
+
+  await AuditLog.create({
+    admin: req.user._id,
+    actionType: "GENERATE_ATTENDANCE_DOCUMENT",
+    targetType: "InternshipApplication",
+    targetId: applicationId,
+  });
+
+  res.status(200).json({ success: true, url: upload.secure_url });
+});
+
 const toggleVisibility = asyncHandler(async (req, res) => {
   const { applicationId, type, visible } = req.body;
   const document = await Document.findOne({ applicationId });
@@ -318,4 +363,5 @@ module.exports = {
   getDocuments,
   getDocumentByVerificationId,
   generatePaymentSlip,
+  generateAttendanceDocument,
 };

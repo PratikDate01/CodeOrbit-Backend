@@ -9,13 +9,15 @@ const {
   toggleVisibility, 
   getDocuments,
   getDocumentByVerificationId, 
-  generatePaymentSlip 
+  generatePaymentSlip,
+  generateAttendanceDocument
 } = require("../controllers/documentController");
 
 router.post("/generate/offer-letter", protect, admin, generateOfferLetter);
 router.post("/generate/certificate", protect, admin, generateCertificate);
 router.post("/generate/loc", protect, admin, generateLOC);
 router.post("/generate/internship-details", protect, admin, generateInternshipDetails);
+router.post("/generate/attendance", protect, admin, generateAttendanceDocument);
 router.patch("/visibility", protect, admin, toggleVisibility);
 router.get("/application/:applicationId", protect, getDocuments);
 router.post("/generate-payment-slip", protect, admin, generatePaymentSlip);

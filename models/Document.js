@@ -42,6 +42,12 @@ const documentSchema = mongoose.Schema(
     internshipDetailsPublicId: {
       type: String,
     },
+    attendanceUrl: {
+      type: String,
+    },
+    attendancePublicId: {
+      type: String,
+    },
     verificationId: {
       type: String,
       unique: true,
@@ -64,6 +70,10 @@ const documentSchema = mongoose.Schema(
       default: true,
     },
     internshipDetailsVisible: {
+      type: Boolean,
+      default: false,
+    },
+    attendanceVisible: {
       type: Boolean,
       default: false,
     },

@@ -119,6 +119,7 @@ app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/activity", require("./routes/activityRoutes"));
+app.use("/api/attendance", require("./routes/attendanceRoutes"));
 
 app.get("/", (req, res) => {
   res.send("Backend is running");

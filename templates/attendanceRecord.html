@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Internship Attendance Record</title>
+
+<style>
+@page { size: A4 portrait; margin: 0; }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f5f5f5;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 210mm;
+    height: 297mm;
+    background: white;
+    padding: 40px 60px;
+    position: relative;
+}
+
+/* WATERMARK */
+.watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    font-size: 100px;
+    color: rgba(30,58,138,0.05);
+}
+
+/* HEADER */
+.header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 2px solid #1e3a8a;
+    margin-bottom: 15px;
+}
+
+.logo { height: 110px; }
+
+/* REF + COMPANY */
+.ref-section {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    margin-bottom: 15px;
+}
+
+.company-info {
+    text-align: right;
+}
+
+/* TITLE */
+.title {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #1e3a8a;
+    margin-bottom: 20px;
+}
+
+/* INFO */
+.info {
+    margin-bottom: 15px;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+/* TABLE */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th {
+    background: #1e3a8a;
+    color: white;
+    padding: 8px;
+    font-size: 12px;
+}
+
+td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    font-size: 12px;
+    text-align: center;
+}
+
+/* SUMMARY */
+.summary {
+    margin-top: 15px;
+    font-size: 13px;
+    line-height: 1.8;
+}
+
+/* FOOTER */
+.footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 25px;
+    align-items: flex-end;
+}
+
+/* QR */
+.qr {
+    width: 70px;
+}
+
+/* SIGN */
+.sign {
+    text-align: center;
+}
+
+.line {
+    border-top: 2px solid black;
+    width: 180px;
+    margin: auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="watermark">CODEORBIT</div>
+
+<div class="header">
+    <img src="{{companyLogo}}" class="logo">
+    <img src="{{msmeLogo}}" class="logo">
+    <img src="{{aicteLogo}}" class="logo">
+</div>
+
+<!-- REF + COMPANY -->
+<div class="ref-section">
+    <div>
+        <strong>Ref No:</strong> {{verificationId}} <br>
+        <strong>Date:</strong> {{date}}
+    </div>
+    <div class="company-info">
+        <strong>CodeOrbit Solutions</strong><br>
+        Whitehouse, Vadgaon BK, Pune<br>
+        codeorbit.internship@gmail.com
+    </div>
+</div>
+
+<div class="title">INTERNSHIP ATTENDANCE RECORD</div>
+
+<div class="info">
+    <strong>Name:</strong> {{name}} <br>
+    <strong>Domain:</strong> {{role}} <br>
+    <strong>Duration:</strong> {{startDate}} to {{endDate}} <br>
+    <strong>Mode:</strong> Remote / Online
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Week</th>
+<th>Days Present</th>
+<th>Total Working Days</th>
+<th>Attendance %</th>
+</tr>
+</thead>
+
+<tbody>
+{{#each weeks}}
+<tr>
+<td>Week {{this.weekNumber}}</td>
+<td>{{this.presentDays}}</td>
+<td>{{this.totalDays}}</td>
+<td>{{this.percentage}}%</td>
+</tr>
+{{/each}}
+</tbody>
+</table>
+
+<div class="summary">
+<strong>Total Working Days (Mon–Fri):</strong> {{totalWorkingDays}} <br>
+<strong>Total Present Days:</strong> {{totalPresentDays}} <br>
+<strong>Overall Attendance:</strong> {{attendancePercentage}}% <br>
+<strong>Status:</strong> {{attendanceStatus}}
+</div>
+
+<div class="footer">
+
+<div>
+<img src="{{qrCode}}" class="qr">
+<div style="font-size:10px">Verify ID: {{verificationId}}</div>
+</div>
+
+<div class="sign">
+<div class="line"></div>
+<strong>Tejas Date</strong><br>
+CO-FOUNDER & CEO
+</div>
+
+</div>
+
+</div>
+
+</body>
+</html>
