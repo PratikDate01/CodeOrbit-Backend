@@ -215,17 +215,28 @@ const generateAttendanceDocument = asyncHandler(async (req, res) => {
     throw new Error("Attendance record not found. Please save attendance first.");
   }
 
+  // Convert to plain object and ensure all nested objects are plain
+  const attendanceObj = JSON.parse(JSON.stringify(attendance.toObject()));
   const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
   const commonData = await getDocData(application, document.verificationId);
 
   const docData = {
     ...commonData,
-    weeks: attendance.weeks,
-    totalWorkingDays: attendance.totalWorkingDays,
-    totalPresentDays: attendance.totalPresentDays,
-    attendancePercentage: attendance.overallPercentage,
-    attendanceStatus: attendance.status,
+    weeks: attendanceObj.weeks || [],
+    totalWorkingDays: attendanceObj.totalWorkingDays || 0,
+    totalPresentDays: attendanceObj.totalPresentDays || 0,
+    attendancePercentage: attendanceObj.overallPercentage || 0,
+    attendanceStatus: attendanceObj.status || "N/A",
   };
+
+  console.log("Generating Attendance PDF for:", application.name);
+  console.log("Attendance Data Summary:", {
+    weeksCount: docData.weeks.length,
+    totalWorkingDays: docData.totalWorkingDays,
+    totalPresentDays: docData.totalPresentDays,
+    attendancePercentage: docData.attendancePercentage
+  });
+
 
   const buffer = await generatePDF("attendanceRecord", docData, { margin: { top: "0", bottom: "0" } });
   const upload = await uploadBufferToCloudinary(buffer, "documents/attendance", `attendance_${applicationId}`);
