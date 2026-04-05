@@ -6,205 +6,379 @@
 <title>Internship Attendance Record</title>
 
 <style>
-@page { size: A4 portrait; margin: 0; }
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-body {
-    font-family: Arial, sans-serif;
-    background: #f5f5f5;
-    padding: 20px;
-    display: flex;
-    justify-content: center;
-}
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        padding: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+    }
 
-.container {
-    width: 210mm;
-    height: 297mm;
-    background: white;
-    padding: 40px 60px;
-    position: relative;
-}
+    .letter-container {
+        width: 210mm;
+        height: 297mm;
+        background: white;
+        padding: 40px 60px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
 
-/* WATERMARK */
-.watermark {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-45deg);
-    font-size: 100px;
-    color: rgba(30,58,138,0.05);
-}
+    /* Watermark */
+    .watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-45deg);
+        font-size: 100px;
+        font-weight: bold;
+        color: rgba(30, 58, 138, 0.05);
+        white-space: nowrap;
+        pointer-events: none;
+        z-index: 0;
+        user-select: none;
+    }
 
-/* HEADER */
-.header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 2px solid #1e3a8a;
-    margin-bottom: 15px;
-}
+    /* Header */
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #1e3a8a;
+        margin-bottom: 20px;
+        z-index: 1;
+    }
 
-.logo { height: 110px; }
+    .logo-left  { height: 130px; width: auto; image-rendering: -webkit-optimize-contrast; }
+    .logo-center{ height: 110px; width: auto; image-rendering: -webkit-optimize-contrast; }
+    .logo-right { height: 130px; width: auto; image-rendering: -webkit-optimize-contrast; }
 
-/* REF + COMPANY */
-.ref-section {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    margin-bottom: 15px;
-}
+    /* Ref + Company */
+    .ref-date-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 25px;
+        font-size: 12px;
+        z-index: 1;
+    }
 
-.company-info {
-    text-align: right;
-}
+    .ref-date-left div { margin-bottom: 2px; }
+    .ref-label,
+    .date-label { font-weight: bold; }
 
-/* TITLE */
-.title {
-    text-align: center;
-    font-size: 22px;
-    font-weight: bold;
-    color: #1e3a8a;
-    margin-bottom: 20px;
-}
+    .company-info { text-align: right; line-height: 1.4; }
+    .company-name {
+        font-weight: bold;
+        color: #1e3a8a;
+        margin-bottom: 2px;
+        font-size: 14px;
+    }
+    .company-address,
+    .company-contact { color: #333; font-size: 11px; }
 
-/* INFO */
-.info {
-    margin-bottom: 15px;
-    font-size: 13px;
-    line-height: 1.8;
-}
+    /* Title */
+    .letter-title {
+        text-align: center;
+        font-size: 24px;
+        font-weight: bold;
+        color: #1e3a8a;
+        margin-bottom: 20px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        z-index: 1;
+    }
 
-/* TABLE */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 10px;
-}
+    /* Intern Info Block */
+    .info-block {
+        background: #f0f4ff;
+        border-left: 4px solid #1e3a8a;
+        border-radius: 4px;
+        padding: 10px 16px;
+        margin-bottom: 18px;
+        font-size: 13px;
+        line-height: 1.8;
+        z-index: 1;
+    }
 
-th {
-    background: #1e3a8a;
-    color: white;
-    padding: 8px;
-    font-size: 12px;
-}
+    .info-block strong { color: #1e3a8a; }
 
-td {
-    border: 1px solid #ccc;
-    padding: 6px;
-    font-size: 12px;
-    text-align: center;
-}
+    /* Table */
+    .table-wrapper {
+        z-index: 1;
+        margin-bottom: 16px;
+    }
 
-/* SUMMARY */
-.summary {
-    margin-top: 15px;
-    font-size: 13px;
-    line-height: 1.8;
-}
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
 
-/* FOOTER */
-.footer {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 25px;
-    align-items: flex-end;
-}
+    thead tr {
+        background: #1e3a8a;
+    }
 
-/* QR */
-.qr {
-    width: 70px;
-}
+    th {
+        color: white;
+        padding: 9px 10px;
+        font-size: 12px;
+        font-weight: bold;
+        text-align: center;
+        letter-spacing: 0.5px;
+    }
 
-/* SIGN */
-.sign {
-    text-align: center;
-}
+    tbody tr:nth-child(even) {
+        background: #f0f4ff;
+    }
 
-.line {
-    border-top: 2px solid black;
-    width: 180px;
-    margin: auto;
-}
+    tbody tr:nth-child(odd) {
+        background: #ffffff;
+    }
+
+    tbody tr:hover {
+        background: #dbeafe;
+    }
+
+    td {
+        border: 1px solid #d1d5db;
+        padding: 7px 10px;
+        font-size: 12px;
+        text-align: center;
+        color: #1a1a1a;
+    }
+
+    td:first-child {
+        font-weight: bold;
+        color: #1e3a8a;
+    }
+
+    /* Percentage coloring */
+    .pct-high   { color: #15803d; font-weight: bold; }
+    .pct-medium { color: #b45309; font-weight: bold; }
+    .pct-low    { color: #b91c1c; font-weight: bold; }
+
+    /* Summary */
+    .summary-block {
+        background: #f0f4ff;
+        border: 1px solid #bfdbfe;
+        border-radius: 4px;
+        padding: 10px 16px;
+        font-size: 13px;
+        line-height: 1.9;
+        z-index: 1;
+        margin-bottom: 10px;
+    }
+
+    .summary-block strong { color: #1e3a8a; }
+
+    .status-badge {
+        display: inline-block;
+        padding: 2px 12px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+
+    .status-present  { background: #dcfce7; color: #15803d; }
+    .status-absent   { background: #fee2e2; color: #b91c1c; }
+    .status-moderate { background: #fef9c3; color: #854d0e; }
+
+    /* Footer */
+    .footer-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: auto;
+        padding-top: 15px;
+        border-top: 1px solid #eee;
+        z-index: 1;
+    }
+
+    /* QR */
+    .qr-section {
+        text-align: left;
+        background: #f8fafc;
+        padding: 10px;
+        border-radius: 4px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .qr-code {
+        width: 70px;
+        height: 70px;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .verify-label {
+        font-size: 10px;
+        font-weight: bold;
+        color: #000;
+        margin-bottom: 1px;
+    }
+
+    .certificate-id {
+        font-size: 9px;
+        color: #666;
+        font-family: monospace;
+    }
+
+    /* Signature */
+    .signature-section {
+        text-align: center;
+        min-width: 180px;
+    }
+
+    .stamp {
+        width: 90px;
+        height: 90px;
+        margin-bottom: -20px;
+        margin-left: auto;
+        margin-right: auto;
+        position: relative;
+        z-index: 2;
+        opacity: 0.9;
+    }
+
+    .signature-line {
+        width: 180px;
+        border-top: 2px solid #000;
+        margin: 0 auto 5px;
+    }
+
+    .signatory-name {
+        font-size: 14px;
+        font-weight: bold;
+        color: #000;
+        margin-bottom: 2px;
+    }
+
+    .signatory-title {
+        font-size: 10px;
+        color: #1e3a8a;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: bold;
+    }
+
+    @media print {
+        body { background: white; padding: 0; }
+        .letter-container { box-shadow: none; }
+    }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<div class="letter-container">
 
-<div class="watermark">CODEORBIT</div>
+    <!-- Watermark -->
+    <div class="watermark">CODEORBIT</div>
 
-<div class="header">
-    <img src="{{companyLogo}}" class="logo">
-    <img src="{{msmeLogo}}" class="logo">
-    <img src="{{aicteLogo}}" class="logo">
-</div>
-
-<!-- REF + COMPANY -->
-<div class="ref-section">
-    <div>
-        <strong>Ref No:</strong> {{verificationId}} <br>
-        <strong>Date:</strong> {{date}}
+    <!-- Header with Logos -->
+    <div class="header">
+        <img src="{{companyLogo}}" alt="CodeOrbit Logo" class="logo-left">
+        <img src="{{msmeLogo}}" alt="Ministry Logo" class="logo-center">
+        <img src="{{aicteLogo}}" alt="AICTE Logo" class="logo-right">
     </div>
-    <div class="company-info">
-        <strong>CodeOrbit Solutions</strong><br>
-        Whitehouse, Vadgaon BK, Pune<br>
-        codeorbit.internship@gmail.com
+
+    <!-- Reference, Date and Company Info -->
+    <div class="ref-date-section">
+        <div class="ref-date-left">
+            <div><span class="ref-label">Ref No:</span> {{verificationId}}</div>
+            <div><span class="date-label">Date:</span> {{date}}</div>
+        </div>
+        <div class="company-info">
+            <div class="company-name">CodeOrbit Solutions</div>
+            <div class="company-address">Whitehouse, Vadgaon BK, Pune 411041</div>
+            <div class="company-contact">codeorbit.internship@gmail.com</div>
+        </div>
     </div>
-</div>
 
-<div class="title">INTERNSHIP ATTENDANCE RECORD</div>
+    <!-- Title -->
+    <div class="letter-title">Internship Attendance Record</div>
 
-<div class="info">
-    <strong>Name:</strong> {{name}} <br>
-    <strong>Domain:</strong> {{role}} <br>
-    <strong>Duration:</strong> {{startDate}} to {{endDate}} <br>
-    <strong>Mode:</strong> Remote / Online
-</div>
+    <!-- Intern Info -->
+    <div class="info-block">
+        <strong>Name:</strong> {{name}} &nbsp;&nbsp;&nbsp;
+        <strong>Domain:</strong> {{role}} <br>
+        <strong>Duration:</strong> {{startDate}} &nbsp;to&nbsp; {{endDate}} &nbsp;&nbsp;&nbsp;
+        <strong>Mode:</strong> Remote / Online
+    </div>
 
-<table>
-<thead>
-<tr>
-<th>Week</th>
-<th>Days Present</th>
-<th>Total Working Days</th>
-<th>Attendance %</th>
-</tr>
-</thead>
+    <!-- Attendance Table -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Week</th>
+                    <th>Days Present</th>
+                    <th>Total Working Days</th>
+                    <th>Attendance %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#each weeks}}
+                <tr>
+                    <td>Week {{this.weekNumber}}</td>
+                    <td>{{this.presentDays}}</td>
+                    <td>{{this.totalDays}}</td>
+                    <td class="{{#if (gte this.percentage 85)}}pct-high{{else}}{{#if (gte this.percentage 60)}}pct-medium{{else}}pct-low{{/if}}{{/if}}">
+                        {{this.percentage}}%
+                    </td>
+                </tr>
+                {{/each}}
+            </tbody>
+        </table>
+    </div>
 
-<tbody>
-{{#each weeks}}
-<tr>
-<td>Week {{this.weekNumber}}</td>
-<td>{{this.presentDays}}</td>
-<td>{{this.totalDays}}</td>
-<td>{{this.percentage}}%</td>
-</tr>
-{{/each}}
-</tbody>
-</table>
+    <!-- Summary -->
+    <div class="summary-block">
+        <strong>Total Working Days (Mon–Fri):</strong> {{totalWorkingDays}} &nbsp;&nbsp;
+        <strong>Total Present Days:</strong> {{totalPresentDays}} <br>
+        <strong>Overall Attendance:</strong> {{attendancePercentage}}% &nbsp;&nbsp;
+        <strong>Status:</strong>
+        <span class="status-badge {{#if (gte attendancePercentage 85)}}status-present{{else}}{{#if (gte attendancePercentage 60)}}status-moderate{{else}}status-absent{{/if}}{{/if}}">
+            {{attendanceStatus}}
+        </span>
+    </div>
 
-<div class="summary">
-<strong>Total Working Days (Mon–Fri):</strong> {{totalWorkingDays}} <br>
-<strong>Total Present Days:</strong> {{totalPresentDays}} <br>
-<strong>Overall Attendance:</strong> {{attendancePercentage}}% <br>
-<strong>Status:</strong> {{attendanceStatus}}
-</div>
+    <!-- Footer -->
+    <div class="footer-section">
 
-<div class="footer">
+        <!-- QR Code -->
+        <div class="qr-section">
+            <img src="{{qrCode}}" alt="Verification QR Code" class="qr-code">
+            <div class="verify-label">Verify Authenticity</div>
+            <div class="certificate-id">ID: {{verificationId}}</div>
+        </div>
 
-<div>
-<img src="{{qrCode}}" class="qr">
-<div style="font-size:10px">Verify ID: {{verificationId}}</div>
-</div>
+        <!-- Signature -->
+        <div class="signature-section">
+            <img src="{{companyStamp}}" alt="Company Stamp" class="stamp">
+            <div class="signature-line"></div>
+            <div class="signatory-name">Tejas Date</div>
+            <div class="signatory-title">Co-Founder &amp; CEO</div>
+        </div>
 
-<div class="sign">
-<div class="line"></div>
-<strong>Tejas Date</strong><br>
-CO-FOUNDER & CEO
-</div>
-
-</div>
+    </div>
 
 </div>
 
