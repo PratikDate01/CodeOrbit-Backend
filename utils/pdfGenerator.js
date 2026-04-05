@@ -1,6 +1,12 @@
 const chromium = require("@sparticuz/chromium");
 const puppeteer = require("puppeteer-core");
 const handlebars = require("handlebars");
+
+// Register helpers
+handlebars.registerHelper("gte", function (a, b) {
+  return a >= b;
+});
+
 const fs = require("fs");
 const path = require("path");
 
