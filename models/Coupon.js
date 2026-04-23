@@ -42,7 +42,7 @@ const couponSchema = mongoose.Schema(
       default: "active",
     },
     applicablePlans: {
-      type: [Number], // e.g. [599, 999, 1499]
+      type: [Number], // e.g. [1499, 2499, 4999]
       required: true,
     },
     createdBy: {
