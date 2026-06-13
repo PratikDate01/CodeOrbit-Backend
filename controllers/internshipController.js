@@ -39,7 +39,7 @@ const applyForInternship = asyncHandler(async (req, res) => {
 
   let finalAmount = amount;
   if (!finalAmount || finalAmount === 0) {
-    finalAmount = duration === 1 ? 999 : duration === 3 ? 1499 : 3999;
+    finalAmount = duration === 1 ? 999 : duration === 3 ? 8000 : 3999;
   }
 
   // Sanitize and extract only needed fields from formData to prevent mass assignment
@@ -249,7 +249,7 @@ const getMyInternshipApplications = asyncHandler(async (req, res) => {
   // Fix 0 amounts for existing applications
   for (let app of applications) {
     if (!app.amount || app.amount === 0) {
-      app.amount = app.duration === 1 ? 999 : app.duration === 3 ? 1499 : 3999;
+      app.amount = app.duration === 1 ? 999 : app.duration === 3 ? 8000 : 3999;
       await app.save();
     }
   }
