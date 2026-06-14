@@ -405,4 +405,4 @@ For questions or suggestions, please reach out to:
 
 ---
 
-Made with ❤️ by the Pratik Date
+Made with ❤️ by Pratik Date
