@@ -63,4 +63,27 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+
+// Cascade delete related records when user is deleted
+userSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  try {
+    const mongoose = require("mongoose");
+    const Enrollment = mongoose.model("Enrollment");
+    const InternshipApplication = mongoose.model("InternshipApplication");
+    const LMSActivityProgress = mongoose.model("LMSActivityProgress");
+    const LMSCertificate = mongoose.model("LMSCertificate");
+    const AssignmentSubmission = mongoose.model("AssignmentSubmission");
+
+    await Enrollment.deleteMany({ user: this._id });
+    await InternshipApplication.deleteMany({ user: this._id });
+    await LMSActivityProgress.deleteMany({ user: this._id });
+    await LMSCertificate.deleteMany({ user: this._id });
+    await AssignmentSubmission.deleteMany({ user: this._id });
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = mongoose.model("User", userSchema);

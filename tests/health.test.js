@@ -1,3 +1,4 @@
+/* global describe, it, afterAll, expect */
 const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("../index");

@@ -8,6 +8,11 @@ const assignmentSubmissionSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
+    enrollment: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Enrollment",
+      index: true,
+    },
     activity: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Activity",

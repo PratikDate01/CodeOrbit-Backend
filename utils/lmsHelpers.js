@@ -14,26 +14,88 @@ const Program = require("../models/Program");
  */
 const autoEnrollUser = async (userId, domain, applicationId) => {
   try {
-    // 1. Find the program matching the domain
+    const mongoose = require("mongoose");
+    const InternshipApplication = mongoose.model("InternshipApplication");
+    const User = mongoose.model("User");
+
+    // 1. Resolve application and user
+    const application = await InternshipApplication.findById(applicationId);
+    if (!application) {
+      console.warn(`Application not found: ${applicationId}`);
+      return null;
+    }
+
+    let resolvedUserId = userId || application.user;
+    if (!resolvedUserId && application.email) {
+      const userObj = await User.findOne({ email: application.email });
+      if (userObj) {
+        resolvedUserId = userObj._id;
+        // Update application's user reference to ensure consistency
+        application.user = resolvedUserId;
+        await application.save();
+      }
+    }
+
+    if (!resolvedUserId) {
+      console.warn(`No user associated with application: ${applicationId}`);
+      return null;
+    }
+
+    // 2. Find the program matching the domain
     const program = await Program.findOne({ internshipDomain: domain, isPublished: true });
     if (!program) {
       console.warn(`No published program found for domain: ${domain}`);
       return null;
     }
 
-    // 2. Check if already enrolled
-    let enrollment = await Enrollment.findOne({ user: userId, program: program._id });
+    // 3. Check if already enrolled for this application
+    let enrollment = await Enrollment.findOne({ internshipApplication: applicationId });
     if (enrollment) {
+      let modified = false;
+      if (!enrollment.user) {
+        enrollment.user = resolvedUserId;
+        modified = true;
+      }
+      if (!enrollment.program) {
+        enrollment.program = program._id;
+        modified = true;
+      }
+      if (modified) {
+        await enrollment.save();
+      }
       return enrollment;
     }
 
-    // 3. Create enrollment
-    enrollment = await Enrollment.create({
-      user: userId,
-      program: program._id,
-      internshipApplication: applicationId,
-      status: "Active",
-    });
+    // Check if user is already enrolled in this program (prevent duplicate active enrollments)
+    enrollment = await Enrollment.findOne({ user: resolvedUserId, program: program._id });
+    if (enrollment) {
+      if (!enrollment.internshipApplication) {
+        enrollment.internshipApplication = applicationId;
+        await enrollment.save();
+      }
+      return enrollment;
+    }
+
+
+    // 4. Create enrollment
+    try {
+      enrollment = await Enrollment.create({
+        user: resolvedUserId,
+        program: program._id,
+        internshipApplication: applicationId,
+        status: "Active",
+      });
+    } catch (createErr) {
+      if (createErr.code === 11000) {
+        console.log(`[autoEnrollUser] Concurrency race condition detected for application ${applicationId}. Fetching existing enrollment.`);
+        enrollment = await Enrollment.findOne({ internshipApplication: applicationId });
+        if (!enrollment) {
+          throw createErr;
+        }
+      } else {
+        throw createErr;
+      }
+    }
 
     return enrollment;
   } catch (error) {

@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   getMyEnrollments,
+  getEnrollmentDetails,
   getProgramDetails,
   getCourseContent,
   updateActivityProgress,
@@ -17,6 +18,7 @@ const { protect, admin } = require("../middleware/authMiddleware");
 router.use(protect);
 
 router.get("/my-enrollments", getMyEnrollments);
+router.get("/enrollments/:enrollmentId", getEnrollmentDetails);
 router.get("/programs/:id", getProgramDetails);
 router.get("/courses/:courseId/content", getCourseContent);
 router.get("/activities/:id", getActivityById);

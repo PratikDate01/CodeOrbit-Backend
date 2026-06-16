@@ -7,7 +7,7 @@ const asyncHandler = require("../middleware/asyncHandler");
 // @desc    Get admin stats
 // @route   GET /api/admin/stats
 // @access  Private/Admin
-const getStats = asyncHandler(async (req, res, next) => {
+const getStats = asyncHandler(async (req, res) => {
   console.log("Fetching admin stats - Start");
   
   console.log("Counting applications...");
@@ -52,7 +52,7 @@ const getStats = asyncHandler(async (req, res, next) => {
 // @desc    Get all users
 // @route   GET /api/admin/users
 // @access  Private/Admin
-const getUsers = asyncHandler(async (req, res, next) => {
+const getUsers = asyncHandler(async (req, res) => {
   const { role, page = 1, limit = 100 } = req.query;
   const query = {};
   
@@ -71,7 +71,7 @@ const getUsers = asyncHandler(async (req, res, next) => {
 // @desc    Delete user
 // @route   DELETE /api/admin/users/:id
 // @access  Private/Admin
-const deleteUser = asyncHandler(async (req, res, next) => {
+const deleteUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id);
 
   if (user) {
@@ -99,7 +99,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 // @desc    Get audit logs
 // @route   GET /api/admin/audit-logs
 // @access  Private/Admin
-const getAuditLogs = asyncHandler(async (req, res, next) => {
+const getAuditLogs = asyncHandler(async (req, res) => {
   const { page = 1, limit = 50 } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
 

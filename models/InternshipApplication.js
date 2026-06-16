@@ -96,6 +96,33 @@ const internshipApplicationSchema = mongoose.Schema(
   }
 );
 
+
+// Cascade delete related records when application is deleted
+internshipApplicationSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  try {
+    const mongoose = require("mongoose");
+    const Enrollment = mongoose.model("Enrollment");
+    const LMSActivityProgress = mongoose.model("LMSActivityProgress");
+    const LMSCertificate = mongoose.model("LMSCertificate");
+    const AssignmentSubmission = mongoose.model("AssignmentSubmission");
+
+    // Find all enrollments associated with this application to clean up their sub-records
+    const enrollments = await Enrollment.find({ internshipApplication: this._id });
+    const enrollmentIds = enrollments.map(e => e._id);
+
+    if (enrollmentIds.length > 0) {
+      await Enrollment.deleteMany({ _id: { $in: enrollmentIds } });
+      await LMSActivityProgress.deleteMany({ enrollment: { $in: enrollmentIds } });
+      await LMSCertificate.deleteMany({ enrollment: { $in: enrollmentIds } });
+      await AssignmentSubmission.deleteMany({ enrollment: { $in: enrollmentIds } });
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = mongoose.model(
   "InternshipApplication",
   internshipApplicationSchema

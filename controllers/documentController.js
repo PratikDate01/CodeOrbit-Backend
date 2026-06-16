@@ -3,6 +3,7 @@ const InternshipApplication = require("../models/InternshipApplication");
 const Attendance = require("../models/Attendance");
 const ActivityProgress = require("../models/ActivityProgress");
 const AuditLog = require("../models/AuditLog");
+const LMSCertificate = require("../models/LMSCertificate");
 const { generatePDF } = require("../utils/pdfGenerator");
 const { numberToWords } = require("../utils/numberToWords");
 const asyncHandler = require("../middleware/asyncHandler");
@@ -358,8 +359,35 @@ const getDocumentByVerificationId = async (req, res) => {
   try {
     const { verificationId } = req.params;
     const document = await Document.findOne({ verificationId }).populate("applicationId user");
-    if (!document) return res.status(404).json({ message: "Document not found" });
-    res.status(200).json(document);
+    if (document) {
+      return res.status(200).json(document);
+    }
+
+    // Try verifying LMS Certificate
+    const lmsCert = await LMSCertificate.findOne({ certificateId: verificationId })
+      .populate("user")
+      .populate("program");
+
+    if (lmsCert) {
+      // Map LMSCertificate to a Document-like structure for the verify page
+      const mappedDoc = {
+        verificationId: lmsCert.certificateId,
+        issuedOn: lmsCert.issueDate,
+        type: "LMSCertificate",
+        user: lmsCert.user,
+        applicationId: {
+          name: lmsCert.user?.name,
+          email: lmsCert.user?.email,
+          preferredDomain: lmsCert.program?.internshipDomain || lmsCert.program?.title,
+          startDate: lmsCert.issueDate, // Fallback start
+          endDate: lmsCert.issueDate, // Fallback end
+        },
+        certificateUrl: lmsCert.verificationUrl,
+      };
+      return res.status(200).json(mappedDoc);
+    }
+
+    return res.status(404).json({ message: "Document not found" });
   } catch (error) {
     res.status(500).json({ message: "Error fetching document", error: error.message });
   }

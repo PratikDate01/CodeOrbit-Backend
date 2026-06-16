@@ -5,6 +5,7 @@ const Coupon = require("../models/Coupon");
 const CouponUsage = require("../models/CouponUsage");
 const Payment = require("../models/Payment");
 const asyncHandler = require("../middleware/asyncHandler");
+const { autoEnrollUser } = require("../utils/lmsHelpers");
 
 // Helper to validate coupon
 const checkCouponValidity = async (code, userId, amount) => {
@@ -220,15 +221,20 @@ const verifyPayment = asyncHandler(async (req, res) => {
       application.status = "Approved"; 
       await application.save();
 
-      // If coupon was used, update coupon usage
-      if (payment.couponUsed) {
-        const coupon = await Coupon.findById(payment.couponUsed);
-        if (coupon) {
-          coupon.currentUses += 1;
-          await coupon.save();
+      // Trigger LMS enrollment
+      await autoEnrollUser(
+        application.user,
+        application.preferredDomain,
+        application._id
+      );
 
+      // If coupon was used, update coupon usage atomically
+      if (payment.couponUsed) {
+        const couponUsageExists = await CouponUsage.findOne({ application: applicationId });
+        if (!couponUsageExists) {
+          await Coupon.findByIdAndUpdate(payment.couponUsed, { $inc: { currentUses: 1 } });
           await CouponUsage.create({
-            coupon: coupon._id,
+            coupon: payment.couponUsed,
             user: application.user,
             application: applicationId,
             discountAmount: payment.discountAmount
@@ -252,8 +258,14 @@ const razorpayWebhook = asyncHandler(async (req, res) => {
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   const signature = req.headers["x-razorpay-signature"];
 
+  if (!webhookSecret) {
+    res.status(500);
+    throw new Error("Razorpay webhook secret is not configured");
+  }
+
   const shasum = nodeCrypto.createHmac("sha256", webhookSecret);
-  shasum.update(JSON.stringify(req.body));
+  const webhookPayload = req.rawBody ? req.rawBody : JSON.stringify(req.body);
+  shasum.update(webhookPayload);
   const digest = shasum.digest("hex");
 
   if (signature !== digest) {
@@ -281,22 +293,24 @@ const razorpayWebhook = asyncHandler(async (req, res) => {
         application.status = "Approved";
         await application.save();
 
+        // Trigger LMS enrollment
+        await autoEnrollUser(
+          application.user,
+          application.preferredDomain,
+          application._id
+        );
+
         // Coupon usage update logic if not already done
         if (payment.couponUsed) {
           const couponUsageExists = await CouponUsage.findOne({ application: application._id });
           if (!couponUsageExists) {
-            const coupon = await Coupon.findById(payment.couponUsed);
-            if (coupon) {
-              coupon.currentUses += 1;
-              await coupon.save();
-
-              await CouponUsage.create({
-                coupon: coupon._id,
-                user: application.user,
-                application: application._id,
-                discountAmount: payment.discountAmount
-              });
-            }
+            await Coupon.findByIdAndUpdate(payment.couponUsed, { $inc: { currentUses: 1 } });
+            await CouponUsage.create({
+              coupon: payment.couponUsed,
+              user: application.user,
+              application: application._id,
+              discountAmount: payment.discountAmount
+            });
           }
         }
       }

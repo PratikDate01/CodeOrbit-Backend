@@ -40,11 +40,41 @@ const getMyEnrollments = asyncHandler(async (req, res) => {
         enrollmentObj.currentModule = firstModule;
       }
     }
+
+    // Attach certificate URL if issued
+    if (enrollment.isCertificateIssued) {
+      const LMSCertificate = require("../models/LMSCertificate");
+      const cert = await LMSCertificate.findOne({ enrollment: enrollment._id });
+      if (cert) {
+        enrollmentObj.certificateUrl = cert.verificationUrl;
+      }
+    }
     
     return enrollmentObj;
   }));
 
   res.json(enrollmentsWithModule);
+});
+
+// @desc    Get enrollment details (program, courses)
+// @route   GET /api/lms/enrollments/:enrollmentId
+// @access  Private
+const getEnrollmentDetails = asyncHandler(async (req, res) => {
+  const enrollment = await Enrollment.findById(req.params.enrollmentId).populate("program");
+
+  if (!enrollment) {
+    res.status(404);
+    throw new Error("Enrollment not found");
+  }
+
+  if (enrollment.user.toString() !== req.user._id.toString() && req.user.role === "client") {
+    res.status(403);
+    throw new Error("Not enrolled in this program");
+  }
+
+  const courses = await Course.find({ program: enrollment.program._id }).sort({ order: 1 });
+
+  res.json({ enrollment, program: enrollment.program, courses });
 });
 
 // @desc    Get program details (if enrolled)
@@ -54,7 +84,7 @@ const getProgramDetails = asyncHandler(async (req, res) => {
   const enrollment = await Enrollment.findOne({
     user: req.user._id,
     program: req.params.id,
-  });
+  }).sort({ createdAt: -1 });
 
   if (!enrollment && req.user.role === "client") {
     res.status(403);
@@ -78,10 +108,15 @@ const getCourseContent = asyncHandler(async (req, res) => {
   }
 
   // Check enrollment
-  const enrollment = await Enrollment.findOne({
-    user: req.user._id,
-    program: course.program,
-  });
+  let enrollment;
+  if (req.query.enrollmentId) {
+    enrollment = await Enrollment.findById(req.query.enrollmentId);
+  } else {
+    enrollment = await Enrollment.findOne({
+      user: req.user._id,
+      program: course.program,
+    }).sort({ createdAt: -1 });
+  }
 
   if (!enrollment && req.user.role === "client") {
     res.status(403);
@@ -100,10 +135,12 @@ const getCourseContent = asyncHandler(async (req, res) => {
     .populate("task");
 
   // Get user progress for these activities
-  const progress = await LMSActivityProgress.find({
-    enrollment: enrollment._id,
-    activity: { $in: activities.map(a => a._id) },
-  });
+  const progress = enrollment
+    ? await LMSActivityProgress.find({
+        enrollment: enrollment._id,
+        activity: { $in: activities.map(a => a._id) },
+      })
+    : [];
 
   // Sort activities based on hierarchy: Module Order -> Lesson Order -> Activity Order
   const moduleOrderMap = {};
@@ -169,10 +206,15 @@ const updateActivityProgress = asyncHandler(async (req, res) => {
     throw new Error("Activity not found");
   }
 
-  const enrollment = await Enrollment.findOne({
-    user: req.user._id,
-    program: activity.lesson.module.course.program,
-  });
+  let enrollment;
+  if (req.body.enrollmentId) {
+    enrollment = await Enrollment.findById(req.body.enrollmentId);
+  } else {
+    enrollment = await Enrollment.findOne({
+      user: req.user._id,
+      program: activity.lesson.module.course.program,
+    }).sort({ createdAt: -1 });
+  }
 
   if (!enrollment) {
     res.status(403);
@@ -262,10 +304,15 @@ const submitQuiz = asyncHandler(async (req, res) => {
     throw new Error("This quiz has no questions");
   }
 
-  const enrollment = await Enrollment.findOne({
-    user: req.user._id,
-    program: activity.lesson.module.course.program,
-  });
+  let enrollment;
+  if (req.body.enrollmentId) {
+    enrollment = await Enrollment.findById(req.body.enrollmentId);
+  } else {
+    enrollment = await Enrollment.findOne({
+      user: req.user._id,
+      program: activity.lesson.module.course.program,
+    }).sort({ createdAt: -1 });
+  }
 
   if (!enrollment) {
     res.status(403);
@@ -359,6 +406,7 @@ const getActivityById = asyncHandler(async (req, res) => {
 
 module.exports = {
   getMyEnrollments,
+  getEnrollmentDetails,
   getProgramDetails,
   getCourseContent,
   updateActivityProgress,

@@ -432,9 +432,40 @@ const getEnrollments = asyncHandler(async (req, res) => {
 
   const enrollments = await Enrollment.find(query)
     .populate("user", "name email")
-    .populate("program", "title")
+    .populate("program", "title internshipDomain")
+    .populate("internshipApplication", "name email preferredDomain paymentStatus status enrolledAt createdAt")
     .sort({ createdAt: -1 });
-  res.json(enrollments);
+
+  const formattedEnrollments = enrollments.map(e => {
+    const obj = e.toObject();
+    if (!obj.user) {
+      if (obj.internshipApplication) {
+        obj.user = {
+          name: obj.internshipApplication.name,
+          email: obj.internshipApplication.email
+        };
+      } else {
+        obj.user = {
+          name: "Unknown User",
+          email: "unknown@codeorbit.com"
+        };
+      }
+    }
+    if (!obj.program) {
+      if (obj.internshipApplication) {
+        obj.program = {
+          title: obj.internshipApplication.preferredDomain
+        };
+      } else {
+        obj.program = {
+          title: "Unknown Program"
+        };
+      }
+    }
+    return obj;
+  });
+
+  res.json(formattedEnrollments);
 });
 
 // @desc    Issue certificate for an enrollment
@@ -443,7 +474,8 @@ const getEnrollments = asyncHandler(async (req, res) => {
 const issueCertificate = asyncHandler(async (req, res) => {
   const enrollment = await Enrollment.findById(req.params.id)
     .populate("user")
-    .populate("program");
+    .populate("program")
+    .populate("internshipApplication");
 
   if (!enrollment) {
     res.status(404);
@@ -500,12 +532,67 @@ const issueCertificate = asyncHandler(async (req, res) => {
   // Generate unique certificate ID (Example: CO-LMS-2026-XXXXX)
   const certId = `CO-LMS-${new Date().getFullYear()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
+  // Generate PDF for LMS Certificate
+  let verificationUrl = "";
+  try {
+    const { uploadBufferToCloudinary } = require("../config/cloudinary");
+    const { generatePDF } = require("../utils/pdfGenerator");
+    const QRCode = require("qrcode");
+    const path = require("path");
+    const fs = require("fs");
+
+    const getBase64Image = (filePath) => {
+      const fullPath = path.join(__dirname, "..", filePath);
+      if (fs.existsSync(fullPath)) {
+        const bitmap = fs.readFileSync(fullPath);
+        const extension = path.extname(fullPath).substring(1);
+        return `data:image/${extension};base64,${bitmap.toString("base64")}`;
+      }
+      return null;
+    };
+
+    const formatDate = (date) => {
+      if (!date) return "Not Specified";
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return "Not Specified";
+      return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+    };
+
+    const verifyLink = `${process.env.FRONTEND_URL}/verify/${certId}`;
+    const qrCodeDataUrl = await QRCode.toDataURL(verifyLink);
+
+    const docData = {
+      name: enrollment.user.name,
+      role: enrollment.program.internshipDomain || enrollment.program.title,
+      college: enrollment.internshipApplication?.college || "N/A",
+      startDate: formatDate(enrollment.enrolledAt),
+      endDate: formatDate(enrollment.completedAt || new Date()),
+      date: formatDate(new Date()),
+      verificationId: certId,
+      verificationUrl: "",
+      qrCode: qrCodeDataUrl,
+      companyLogo: getBase64Image("assets/logos/Company Logo.png"),
+      aicteLogo: getBase64Image("assets/logos/AICTE LOGO.png"),
+      msmeLogo: getBase64Image("assets/logos/MSME LOGO.png"),
+      companyStamp: getBase64Image("assets/stamps/COMPANY STAMP.png"),
+      signatoryName: "Tejas Date",
+      signatoryTitle: "CO-FOUNDER"
+    };
+
+    const buffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/lms_certificates", `lms_cert_${enrollment._id}`);
+    verificationUrl = upload.secure_url;
+  } catch (pdfErr) {
+    console.error("Failed to generate PDF for LMS certificate:", pdfErr);
+  }
+
   const certificate = await LMSCertificate.create({
     enrollment: enrollment._id,
     user: enrollment.user._id,
     program: enrollment.program._id,
     certificateId: certId,
     approvedBy: req.user._id,
+    verificationUrl,
   });
 
   enrollment.isCertificateIssued = true;
@@ -555,12 +642,33 @@ const getPendingApprovals = asyncHandler(async (req, res) => {
     .populate("user", "name email")
     .populate({
       path: "enrollment",
-      populate: { path: "program", select: "title" }
+      populate: [
+        { path: "program", select: "title" },
+        { path: "internshipApplication", select: "name email" }
+      ]
     })
     .populate("activity", "title type")
     .sort({ createdAt: -1 });
+
+  const formattedPending = pending.map(item => {
+    const obj = item.toObject();
+    if (!obj.user) {
+      if (obj.enrollment?.internshipApplication) {
+        obj.user = {
+          name: obj.enrollment.internshipApplication.name,
+          email: obj.enrollment.internshipApplication.email
+        };
+      } else {
+        obj.user = {
+          name: "Unknown User",
+          email: "unknown@codeorbit.com"
+        };
+      }
+    }
+    return obj;
+  });
   
-  res.json(pending);
+  res.json(formattedPending);
 });
 
 module.exports = {

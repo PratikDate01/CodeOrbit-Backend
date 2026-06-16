@@ -27,10 +27,15 @@ const submitAssignment = asyncHandler(async (req, res) => {
     throw new Error("Assignment activity not found");
   }
 
-  const enrollment = await Enrollment.findOne({
-    user: req.user._id,
-    program: activity.lesson.module.course.program,
-  });
+  let enrollment;
+  if (req.body.enrollmentId) {
+    enrollment = await Enrollment.findById(req.body.enrollmentId);
+  } else {
+    enrollment = await Enrollment.findOne({
+      user: req.user._id,
+      program: activity.lesson.module.course.program,
+    }).sort({ createdAt: -1 });
+  }
 
   if (!enrollment) {
     res.status(403);
@@ -39,7 +44,8 @@ const submitAssignment = asyncHandler(async (req, res) => {
 
   let submission = await AssignmentSubmission.findOne({
     user: req.user._id,
-    activity: activityId
+    activity: activityId,
+    ...(enrollment ? { enrollment: enrollment._id } : {})
   });
 
   if (submission) {
@@ -47,10 +53,14 @@ const submitAssignment = asyncHandler(async (req, res) => {
     submission.fileUrl = fileUrl;
     submission.status = "Pending";
     submission.submittedAt = Date.now();
+    if (enrollment) {
+      submission.enrollment = enrollment._id;
+    }
     await submission.save();
   } else {
     submission = await AssignmentSubmission.create({
       user: req.user._id,
+      enrollment: enrollment ? enrollment._id : undefined,
       activity: activityId,
       submissionText,
       fileUrl,
@@ -115,10 +125,15 @@ const reviewAssignment = asyncHandler(async (req, res) => {
   });
 
   // Find the user's enrollment
-  const enrollment = await Enrollment.findOne({
-    user: submission.user,
-    program: activity.lesson.module.course.program,
-  });
+  let enrollment;
+  if (submission.enrollment) {
+    enrollment = await Enrollment.findById(submission.enrollment);
+  } else {
+    enrollment = await Enrollment.findOne({
+      user: submission.user,
+      program: activity.lesson.module.course.program,
+    }).sort({ createdAt: -1 });
+  }
 
   if (enrollment) {
     let progress = await LMSActivityProgress.findOne({

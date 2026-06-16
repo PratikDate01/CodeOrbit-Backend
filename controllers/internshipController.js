@@ -149,11 +149,8 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
     
     const updatedApplication = await application.save();
 
-    // Trigger LMS enrollment if application is Approved or Selected
-    if (
-      (updatedApplication.status === "Approved" || updatedApplication.status === "Selected") &&
-      updatedApplication.user
-    ) {
+    // Trigger LMS enrollment if application is Approved
+    if (updatedApplication.status === "Approved") {
       await autoEnrollUser(
         updatedApplication.user,
         updatedApplication.preferredDomain,

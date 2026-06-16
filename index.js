@@ -1,3 +1,15 @@
+const dns = require("dns");
+dns.setDefaultResultOrder("ipv4first");
+try {
+  const currentServers = dns.getServers();
+  if (currentServers.length === 0 || (currentServers.length === 1 && (currentServers[0] === "127.0.0.1" || currentServers[0] === "::1"))) {
+    dns.setServers(["8.8.8.8", "1.1.1.1"]);
+    console.log("Configured Node DNS resolver with public fallbacks for SRV lookups");
+  }
+} catch (dnsErr) {
+  console.warn("Could not set DNS fallback:", dnsErr.message);
+}
+
 const express = require("express");
 const dotenv = require("dotenv");
 // Load env vars first!
@@ -61,7 +73,12 @@ app.use(cors({
 }));
 
 // 2. Core Parsers
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({ 
+  limit: "50mb",
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(passport.initialize());
 
@@ -115,6 +132,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/admin/lms", require("./routes/lmsAdminRoutes"));
 app.use("/api/lms", require("./routes/lmsStudentRoutes"));
 app.use("/api/lms/assignment", require("./routes/assignmentRoutes"));
+app.use("/api/admin/system", require("./routes/systemRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 app.use("/api/documents", require("./routes/documentRoutes"));
 app.use("/api/payments", require("./routes/paymentRoutes"));
@@ -147,6 +165,21 @@ const startServer = async () => {
     const server = app.listen(PORT, () => {
       console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
+
+    // Prevents Render Cold-Start spin down on free tiers
+    if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
+      const axios = require("axios");
+      console.log(`[Cold-Start Worker] Initializing self-ping worker for ${process.env.BACKEND_URL}`);
+      setInterval(async () => {
+        try {
+          const pingUrl = `${process.env.BACKEND_URL.replace(/\/$/, "")}/api/ping`;
+          await axios.get(pingUrl);
+          console.log(`[Cold-Start Worker] Self-ping successful: ${pingUrl} at ${new Date().toISOString()}`);
+        } catch (pingErr) {
+          console.warn(`[Cold-Start Worker] Self-ping failed: ${pingErr.message}`);
+        }
+      }, 10 * 60 * 1000); // Every 10 minutes
+    }
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (err) => {

@@ -17,7 +17,6 @@ const enrollmentSchema = new mongoose.Schema(
     internshipApplication: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "InternshipApplication",
-      index: true,
     },
     progress: {
       type: Number,
@@ -45,7 +44,7 @@ const enrollmentSchema = new mongoose.Schema(
   }
 );
 
-// Unique enrollment per user per program
-enrollmentSchema.index({ user: 1, program: 1 }, { unique: true });
+// Unique enrollment per internship application
+enrollmentSchema.index({ internshipApplication: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Enrollment", enrollmentSchema);
