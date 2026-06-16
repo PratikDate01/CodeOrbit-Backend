@@ -5,6 +5,8 @@ const {
   getDataIntegrityReport,
   healDataIntegrity,
   getErrorLogs,
+  getMaintenanceSettings,
+  updateMaintenanceSettings,
 } = require("../controllers/systemController");
 const { protect, admin } = require("../middleware/authMiddleware");
 
@@ -16,5 +18,7 @@ router.get("/health", getSystemHealth);
 router.get("/integrity", getDataIntegrityReport);
 router.post("/integrity/heal", healDataIntegrity);
 router.get("/logs", getErrorLogs);
+router.get("/maintenance", getMaintenanceSettings);
+router.put("/maintenance", updateMaintenanceSettings);
 
 module.exports = router;

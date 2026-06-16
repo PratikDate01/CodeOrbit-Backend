@@ -29,6 +29,7 @@ const connectDB = require("./config/db");
 require("./config/passport");
 const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter, authLimiter, contactLimiter } = require("./middleware/rateLimiter");
+const { maintenanceMiddleware } = require("./middleware/maintenanceMiddleware");
 
 // Validate Environment Variables
 validateEnv();
@@ -104,6 +105,9 @@ app.use(hpp({
 app.use(compression());
 app.use(morgan("dev"));
 
+// Apply global maintenance middleware
+app.use(maintenanceMiddleware);
+
 // 4. Static Folders
 app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 app.use("/assets", express.static(path.resolve(__dirname, "assets")));
@@ -118,6 +122,17 @@ app.use("/api", (req, res, next) => {
 
 // 5. Routes
 app.get("/api/ping", (req, res) => res.status(200).send("pong"));
+
+// Public maintenance status endpoint
+app.get("/api/maintenance/status", async (req, res) => {
+  try {
+    const SystemSetting = require("./models/SystemSetting");
+    let settings = await SystemSetting.findOne({ key: "maintenance_config" });
+    res.json({ maintenanceMode: settings ? settings.maintenanceMode : false });
+  } catch (err) {
+    res.json({ maintenanceMode: false });
+  }
+});
 
 // Apply stricter rate limiting to auth and payments
 app.use("/api/auth", authLimiter);

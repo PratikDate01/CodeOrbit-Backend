@@ -8,6 +8,8 @@ const Program = require("../models/Program");
 const LMSActivityProgress = require("../models/LMSActivityProgress");
 const LMSCertificate = require("../models/LMSCertificate");
 const asyncHandler = require("../middleware/asyncHandler");
+const SystemSetting = require("../models/SystemSetting");
+const { updateMaintenanceCache } = require("../middleware/maintenanceMiddleware");
 
 // @desc    Get detailed system health status
 // @route   GET /api/admin/system/health
@@ -234,9 +236,75 @@ const getErrorLogs = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Get maintenance settings
+// @route   GET /api/admin/system/maintenance
+// @access  Private/Admin
+const getMaintenanceSettings = asyncHandler(async (req, res) => {
+  let settings = await SystemSetting.findOne({ key: "maintenance_config" })
+    .populate("enabledBy", "name email");
+
+  if (!settings) {
+    settings = await SystemSetting.create({
+      key: "maintenance_config",
+      maintenanceMode: false,
+      allowedUsers: [],
+      enabledBy: null,
+      enabledAt: null,
+    });
+  }
+
+  res.json(settings);
+});
+
+// @desc    Update maintenance settings
+// @route   PUT /api/admin/system/maintenance
+// @access  Private/Admin
+const updateMaintenanceSettings = asyncHandler(async (req, res) => {
+  const { maintenanceMode, allowedUsers } = req.body;
+
+  let settings = await SystemSetting.findOne({ key: "maintenance_config" });
+  if (!settings) {
+    settings = new SystemSetting({ key: "maintenance_config" });
+  }
+
+  const previousMode = settings.maintenanceMode;
+
+  if (maintenanceMode !== undefined) {
+    settings.maintenanceMode = maintenanceMode;
+    if (maintenanceMode && !previousMode) {
+      settings.enabledBy = req.user._id;
+      settings.enabledAt = new Date();
+    } else if (!maintenanceMode) {
+      settings.enabledBy = null;
+      settings.enabledAt = null;
+    }
+  }
+
+  if (allowedUsers !== undefined) {
+    settings.allowedUsers = allowedUsers
+      .map((u) => u.trim())
+      .filter((u) => u.length > 0);
+  }
+
+  await settings.save();
+
+  // Update in-memory cache in the middleware
+  updateMaintenanceCache({
+    maintenanceMode: settings.maintenanceMode,
+    allowedUsers: settings.allowedUsers,
+  });
+
+  const populated = await SystemSetting.findOne({ key: "maintenance_config" })
+    .populate("enabledBy", "name email");
+
+  res.json(populated);
+});
+
 module.exports = {
   getSystemHealth,
   getDataIntegrityReport,
   healDataIntegrity,
   getErrorLogs,
+  getMaintenanceSettings,
+  updateMaintenanceSettings,
 };
