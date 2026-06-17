@@ -102,6 +102,21 @@ const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
+  if (application.paymentStatus === "Verified" || application.status === "Approved" || application.status === "Completed") {
+    const SecurityEvent = require("../models/SecurityEvent");
+    SecurityEvent.create({
+      eventType: "suspicious_request",
+      user: req.user._id,
+      email: req.user.email,
+      action: `Duplicate payment attempt blocked for application: ${applicationId}`,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+      details: { applicationId, email: req.user.email }
+    }).catch(err => console.error("Failed to log duplicate payment attempt:", err.message));
+
+    res.status(400);
+    throw new Error("Application has already been paid and verified");
+  }
+
   if (application.status !== "Selected") {
     res.status(400);
     throw new Error("Application is not approved for payment yet");
@@ -245,6 +260,16 @@ const verifyPayment = asyncHandler(async (req, res) => {
 
     res.json({ success: true, message: "Payment verified successfully" });
   } else {
+    const SecurityEvent = require("../models/SecurityEvent");
+    SecurityEvent.create({
+      eventType: "suspicious_request",
+      user: req.user ? req.user._id : undefined,
+      email: req.user ? req.user.email : undefined,
+      action: `Razorpay signature verification failed for order: ${razorpay_order_id}`,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+      details: { razorpay_order_id, razorpay_payment_id }
+    }).catch(err => console.error("Failed to log verification failure:", err.message));
+
     payment.status = "failed";
     await payment.save();
     res.status(400).json({ success: false, message: "Invalid payment signature" });
@@ -269,6 +294,14 @@ const razorpayWebhook = asyncHandler(async (req, res) => {
   const digest = shasum.digest("hex");
 
   if (signature !== digest) {
+    const SecurityEvent = require("../models/SecurityEvent");
+    SecurityEvent.create({
+      eventType: "suspicious_request",
+      action: `Razorpay Webhook signature verification failed`,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+      details: { signature, expectedDigest: digest }
+    }).catch(err => console.error("Failed to log webhook verification failure:", err.message));
+
     return res.status(400).json({ success: false, message: "Invalid signature" });
   }
 

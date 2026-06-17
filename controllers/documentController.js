@@ -69,6 +69,7 @@ const getDocData = async (application, verificationId) => {
 };
 
 const generateOfferLetter = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId } = req.body;
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -76,34 +77,53 @@ const generateOfferLetter = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
-  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
-  const docData = await getDocData(application, document.verificationId);
+  try {
+    const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+    const docData = await getDocData(application, document.verificationId);
 
-  const buffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
-  const upload = await uploadBufferToCloudinary(buffer, "documents/offer_letters", `offer_letter_${applicationId}`);
+    const buffer = await generatePDF("offerLetter", docData, { margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/offer_letters", `offer_letter_${applicationId}`);
 
-  document.offerLetterUrl = upload.secure_url;
-  document.offerLetterPublicId = upload.public_id;
-  document.offerLetterVisible = true; // Auto-show after generation
-  await document.save();
+    document.offerLetterUrl = upload.secure_url;
+    document.offerLetterPublicId = upload.public_id;
+    document.offerLetterVisible = true; // Auto-show after generation
+    await document.save();
 
-  // Update application status to approved if it was pending
-  if (application.status === "Pending") {
-    application.status = "Approved";
-    await application.save();
+    // Update application status to approved if it was pending
+    if (application.status === "Pending") {
+      application.status = "Approved";
+      await application.save();
+    }
+
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "offerLetter",
+      success: true,
+      duration: Date.now() - startTime
+    });
+
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "GENERATE_OFFER_LETTER",
+      targetType: "InternshipApplication",
+      targetId: applicationId,
+    });
+
+    res.status(200).json({ success: true, url: upload.secure_url });
+  } catch (err) {
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "offerLetter",
+      success: false,
+      duration: Date.now() - startTime,
+      error: err.message
+    });
+    throw err;
   }
-
-  await AuditLog.create({
-    admin: req.user._id,
-    actionType: "GENERATE_OFFER_LETTER",
-    targetType: "InternshipApplication",
-    targetId: applicationId,
-  });
-
-  res.status(200).json({ success: true, url: upload.secure_url });
 });
 
 const generateCertificate = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId } = req.body;
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -123,28 +143,47 @@ const generateCertificate = asyncHandler(async (req, res) => {
     throw new Error("Student not eligible for certificate yet");
   }
 
-  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
-  const docData = await getDocData(application, document.verificationId);
+  try {
+    const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+    const docData = await getDocData(application, document.verificationId);
 
-  const buffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
-  const upload = await uploadBufferToCloudinary(buffer, "documents/certificates", `certificate_${applicationId}`);
+    const buffer = await generatePDF("certificate", docData, { landscape: true, margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/certificates", `certificate_${applicationId}`);
 
-  document.certificateUrl = upload.secure_url;
-  document.certificatePublicId = upload.public_id;
-  document.certificateVisible = true; // Auto-show after generation
-  await document.save();
+    document.certificateUrl = upload.secure_url;
+    document.certificatePublicId = upload.public_id;
+    document.certificateVisible = true; // Auto-show after generation
+    await document.save();
 
-  await AuditLog.create({
-    admin: req.user._id,
-    actionType: "GENERATE_CERTIFICATE",
-    targetType: "InternshipApplication",
-    targetId: applicationId,
-  });
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "certificate",
+      success: true,
+      duration: Date.now() - startTime
+    });
 
-  res.status(200).json({ success: true, url: upload.secure_url });
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "GENERATE_CERTIFICATE",
+      targetType: "InternshipApplication",
+      targetId: applicationId,
+    });
+
+    res.status(200).json({ success: true, url: upload.secure_url });
+  } catch (err) {
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "certificate",
+      success: false,
+      duration: Date.now() - startTime,
+      error: err.message
+    });
+    throw err;
+  }
 });
 
 const generateLOC = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId } = req.body;
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -152,28 +191,47 @@ const generateLOC = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
-  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
-  const docData = await getDocData(application, document.verificationId);
+  try {
+    const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+    const docData = await getDocData(application, document.verificationId);
 
-  const buffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
-  const upload = await uploadBufferToCloudinary(buffer, "documents/locs", `loc_${applicationId}`);
+    const buffer = await generatePDF("loc", docData, { margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/locs", `loc_${applicationId}`);
 
-  document.locUrl = upload.secure_url;
-  document.locPublicId = upload.public_id;
-  document.locVisible = true; // Auto-show after generation
-  await document.save();
+    document.locUrl = upload.secure_url;
+    document.locPublicId = upload.public_id;
+    document.locVisible = true; // Auto-show after generation
+    await document.save();
 
-  await AuditLog.create({
-    admin: req.user._id,
-    actionType: "GENERATE_LOC",
-    targetType: "InternshipApplication",
-    targetId: applicationId,
-  });
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "loc",
+      success: true,
+      duration: Date.now() - startTime
+    });
 
-  res.status(200).json({ success: true, url: upload.secure_url });
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "GENERATE_LOC",
+      targetType: "InternshipApplication",
+      targetId: applicationId,
+    });
+
+    res.status(200).json({ success: true, url: upload.secure_url });
+  } catch (err) {
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "loc",
+      success: false,
+      duration: Date.now() - startTime,
+      error: err.message
+    });
+    throw err;
+  }
 });
 
 const generateInternshipDetails = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId } = req.body;
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -181,28 +239,47 @@ const generateInternshipDetails = asyncHandler(async (req, res) => {
     throw new Error("Application not found");
   }
 
-  const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
-  const docData = await getDocData(application, document.verificationId);
+  try {
+    const document = await getOrCreateDocument(applicationId, application.user?._id || application.user);
+    const docData = await getDocData(application, document.verificationId);
 
-  const buffer = await generatePDF("internshipdetails", docData, { margin: { top: "0", bottom: "0" } });
-  const upload = await uploadBufferToCloudinary(buffer, "documents/internship_details", `internship_details_${applicationId}`);
+    const buffer = await generatePDF("internshipdetails", docData, { margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/internship_details", `internship_details_${applicationId}`);
 
-  document.internshipDetailsUrl = upload.secure_url;
-  document.internshipDetailsPublicId = upload.public_id;
-  document.internshipDetailsVisible = true; // Auto-show after generation
-  await document.save();
+    document.internshipDetailsUrl = upload.secure_url;
+    document.internshipDetailsPublicId = upload.public_id;
+    document.internshipDetailsVisible = true; // Auto-show after generation
+    await document.save();
 
-  await AuditLog.create({
-    admin: req.user._id,
-    actionType: "GENERATE_INTERNSHIP_DETAILS",
-    targetType: "InternshipApplication",
-    targetId: applicationId,
-  });
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "internshipDetails",
+      success: true,
+      duration: Date.now() - startTime
+    });
 
-  res.status(200).json({ success: true, url: upload.secure_url });
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "GENERATE_INTERNSHIP_DETAILS",
+      targetType: "InternshipApplication",
+      targetId: applicationId,
+    });
+
+    res.status(200).json({ success: true, url: upload.secure_url });
+  } catch (err) {
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "internshipDetails",
+      success: false,
+      duration: Date.now() - startTime,
+      error: err.message
+    });
+    throw err;
+  }
 });
 
 const generateAttendanceDocument = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId } = req.body;
   const application = await InternshipApplication.findById(applicationId).populate("user");
   if (!application) {
@@ -238,23 +315,40 @@ const generateAttendanceDocument = asyncHandler(async (req, res) => {
     attendancePercentage: docData.attendancePercentage
   });
 
+  try {
+    const buffer = await generatePDF("attendanceRecord", docData, { margin: { top: "0", bottom: "0" } });
+    const upload = await uploadBufferToCloudinary(buffer, "documents/attendance", `attendance_${applicationId}`);
 
-  const buffer = await generatePDF("attendanceRecord", docData, { margin: { top: "0", bottom: "0" } });
-  const upload = await uploadBufferToCloudinary(buffer, "documents/attendance", `attendance_${applicationId}`);
+    document.attendanceUrl = upload.secure_url;
+    document.attendancePublicId = upload.public_id;
+    document.attendanceVisible = true; // Auto-show after generation
+    await document.save();
 
-  document.attendanceUrl = upload.secure_url;
-  document.attendancePublicId = upload.public_id;
-  document.attendanceVisible = true; // Auto-show after generation
-  await document.save();
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "attendance",
+      success: true,
+      duration: Date.now() - startTime
+    });
 
-  await AuditLog.create({
-    admin: req.user._id,
-    actionType: "GENERATE_ATTENDANCE_DOCUMENT",
-    targetType: "InternshipApplication",
-    targetId: applicationId,
-  });
+    await AuditLog.create({
+      admin: req.user._id,
+      actionType: "GENERATE_ATTENDANCE_DOCUMENT",
+      targetType: "InternshipApplication",
+      targetId: applicationId,
+    });
 
-  res.status(200).json({ success: true, url: upload.secure_url });
+    res.status(200).json({ success: true, url: upload.secure_url });
+  } catch (err) {
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "attendance",
+      success: false,
+      duration: Date.now() - startTime,
+      error: err.message
+    });
+    throw err;
+  }
 });
 
 const toggleVisibility = asyncHandler(async (req, res) => {
@@ -279,6 +373,7 @@ const getDocuments = asyncHandler(async (req, res) => {
 });
 
 const generatePaymentSlip = asyncHandler(async (req, res) => {
+  const startTime = Date.now();
   const { applicationId, regenerate = false } = req.body;
 
   const existingDoc = await Document.findOne({ applicationId });
@@ -337,6 +432,13 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
       { upsert: true, new: true }
     );
 
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "paymentReceipt",
+      success: true,
+      duration: Date.now() - startTime
+    });
+
     await AuditLog.create({
       admin: req.user._id,
       actionType: regenerate ? "REGENERATE_PAYMENT_SLIP" : "GENERATE_PAYMENT_SLIP",
@@ -351,6 +453,13 @@ const generatePaymentSlip = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error("[Controller] Payment Slip Error:", error);
+    const DocumentGenerationLog = require("../models/DocumentGenerationLog");
+    await DocumentGenerationLog.create({
+      documentType: "paymentReceipt",
+      success: false,
+      duration: Date.now() - startTime,
+      error: error.message
+    });
     res.status(500).json({ success: false, message: error.message });
   }
 });

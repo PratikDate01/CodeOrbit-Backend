@@ -31,6 +31,12 @@ const errorHandler = require("./middleware/errorHandler");
 const { apiLimiter, authLimiter, contactLimiter } = require("./middleware/rateLimiter");
 const { maintenanceMiddleware } = require("./middleware/maintenanceMiddleware");
 
+// Event Loop Monitor
+const { startMonitoring } = require("./utils/eventLoopMonitor");
+startMonitoring();
+
+const apiPerformanceMiddleware = require("./middleware/apiPerformanceMiddleware");
+
 // Validate Environment Variables
 validateEnv();
 
@@ -82,6 +88,7 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(passport.initialize());
+app.use(apiPerformanceMiddleware);
 
 // 3. Security & Optimization Middleware
 app.use(helmet({
@@ -129,7 +136,7 @@ app.get("/api/maintenance/status", async (req, res) => {
     const SystemSetting = require("./models/SystemSetting");
     let settings = await SystemSetting.findOne({ key: "maintenance_config" });
     res.json({ maintenanceMode: settings ? settings.maintenanceMode : false });
-  } catch (err) {
+  } catch {
     res.json({ maintenanceMode: false });
   }
 });

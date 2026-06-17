@@ -32,6 +32,7 @@ const errorHandler = (err, req, res, _next) => {
   console.error(err.stack);
 
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const severity = statusCode >= 500 ? "critical" : "warning";
 
   // Asynchronously log to the database without blocking the request
   try {
@@ -43,6 +44,8 @@ const errorHandler = (err, req, res, _next) => {
       user: req.user ? req.user._id : undefined,
       ip: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress,
       metadata: sanitizeMetadata(req),
+      severity,
+      resolved: false,
     }).catch((dbErr) => {
       console.error("Failed to write error log to MongoDB:", dbErr.message);
     });

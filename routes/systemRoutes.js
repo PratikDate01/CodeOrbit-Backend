@@ -5,6 +5,7 @@ const {
   getDataIntegrityReport,
   healDataIntegrity,
   getErrorLogs,
+  resolveErrorLog,
   getMaintenanceSettings,
   updateMaintenanceSettings,
 } = require("../controllers/systemController");
@@ -18,6 +19,7 @@ router.get("/health", getSystemHealth);
 router.get("/integrity", getDataIntegrityReport);
 router.post("/integrity/heal", healDataIntegrity);
 router.get("/logs", getErrorLogs);
+router.put("/logs/:id/resolve", resolveErrorLog);
 router.get("/maintenance", getMaintenanceSettings);
 router.put("/maintenance", updateMaintenanceSettings);
 

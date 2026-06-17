@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const SecurityEvent = require("../models/SecurityEvent");
 
 // Generate JWT
 const generateToken = (id) => {
@@ -70,8 +71,11 @@ const loginUser = async (req, res, next) => {
       // Ensure this specific email always has admin role
       if (email === process.env.ADMIN_EMAIL && user.role !== "admin") {
         user.role = "admin";
-        await user.save();
       }
+
+      user.lastLogin = new Date();
+      user.lastActive = new Date();
+      await user.save();
 
       res.json({
         _id: user._id,
@@ -84,6 +88,15 @@ const loginUser = async (req, res, next) => {
         token: generateToken(user._id),
       });
     } else {
+      // Log failed login attempt asynchronously
+      SecurityEvent.create({
+        eventType: "failed_login",
+        email: email,
+        action: `Failed login attempt for email: ${email}`,
+        ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress,
+        details: { email }
+      }).catch(err => console.error("Failed to log failed login:", err.message));
+
       res.status(401);
       throw new Error("Invalid email or password");
     }

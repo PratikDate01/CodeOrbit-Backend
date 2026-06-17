@@ -29,6 +29,17 @@ const errorLogSchema = new mongoose.Schema(
     metadata: {
       type: mongoose.Schema.Types.Mixed,
     },
+    severity: {
+      type: String,
+      enum: ["warning", "error", "critical"],
+      default: "error",
+      index: true,
+    },
+    resolved: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
   },
   {
     timestamps: true,
