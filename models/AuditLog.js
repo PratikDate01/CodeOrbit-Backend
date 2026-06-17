@@ -31,4 +31,24 @@ const auditLogSchema = mongoose.Schema(
   }
 );
 
+auditLogSchema.post("save", async function (doc) {
+  try {
+    const CentralLog = mongoose.model("CentralLog");
+    await CentralLog.create({
+      timestamp: doc.createdAt || new Date(),
+      user: doc.admin || null,
+      method: "",
+      route: "",
+      status: "200",
+      ipAddress: doc.ipAddress || "",
+      message: `${doc.actionType} on ${doc.targetType}`,
+      logType: "audit",
+      severity: "info",
+      details: doc.details,
+    });
+  } catch (err) {
+    console.error("CentralLog synchronization from AuditLog failed:", err.message);
+  }
+});
+
 module.exports = mongoose.model("AuditLog", auditLogSchema);

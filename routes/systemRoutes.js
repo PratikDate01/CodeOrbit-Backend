@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const {
-  getSystemHealth,
+  getSystemOverview,
+  getSystemPerformance,
+  getDatabaseDiagnostics,
   getDataIntegrityReport,
   healDataIntegrity,
   getErrorLogs,
@@ -15,7 +17,9 @@ const { protect, admin } = require("../middleware/authMiddleware");
 router.use(protect);
 router.use(admin);
 
-router.get("/health", getSystemHealth);
+router.get("/overview", getSystemOverview);
+router.get("/performance", getSystemPerformance);
+router.get("/database", getDatabaseDiagnostics);
 router.get("/integrity", getDataIntegrityReport);
 router.post("/integrity/heal", healDataIntegrity);
 router.get("/logs", getErrorLogs);

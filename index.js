@@ -35,6 +35,10 @@ const { maintenanceMiddleware } = require("./middleware/maintenanceMiddleware");
 const { startMonitoring } = require("./utils/eventLoopMonitor");
 startMonitoring();
 
+// Register CentralLog model
+require("./models/CentralLog");
+require("./models/ColdStartWorker");
+
 const apiPerformanceMiddleware = require("./middleware/apiPerformanceMiddleware");
 
 // Validate Environment Variables
@@ -188,20 +192,56 @@ const startServer = async () => {
       console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
     });
 
-    // Prevents Render Cold-Start spin down on free tiers
-    if (process.env.NODE_ENV === "production" && process.env.BACKEND_URL) {
-      const axios = require("axios");
-      console.log(`[Cold-Start Worker] Initializing self-ping worker for ${process.env.BACKEND_URL}`);
-      setInterval(async () => {
-        try {
-          const pingUrl = `${process.env.BACKEND_URL.replace(/\/$/, "")}/api/ping`;
-          await axios.get(pingUrl);
-          console.log(`[Cold-Start Worker] Self-ping successful: ${pingUrl} at ${new Date().toISOString()}`);
-        } catch (pingErr) {
-          console.warn(`[Cold-Start Worker] Self-ping failed: ${pingErr.message}`);
-        }
-      }, 10 * 60 * 1000); // Every 10 minutes
-    }
+    // Prevents Render Cold-Start spin down on free tiers and tracks health status
+    const axios = require("axios");
+    const mongoose = require("mongoose");
+    const ColdStartWorker = mongoose.model("ColdStartWorker");
+    const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+    const pingInterval = process.env.NODE_ENV === "production" ? 10 * 60 * 1000 : 1 * 60 * 1000;
+
+    const triggerSelfPing = async () => {
+      const startTime = Date.now();
+      const pingUrl = `${backendUrl.replace(/\/$/, "")}/api/ping`;
+      try {
+        await axios.get(pingUrl, { timeout: 10000 });
+        const duration = Date.now() - startTime;
+        
+        await ColdStartWorker.findOneAndUpdate(
+          { workerId: "main_worker" },
+          {
+            $set: {
+              status: "Active",
+              lastSuccessPing: new Date(),
+              lastPingDuration: duration,
+              lastPingTime: new Date()
+            },
+            $inc: { successCount: 1 }
+          },
+          { upsert: true, new: true }
+        );
+        console.log(`[Cold-Start Worker] Self-ping successful: ${pingUrl} in ${duration}ms`);
+      } catch (pingErr) {
+        const duration = Date.now() - startTime;
+        await ColdStartWorker.findOneAndUpdate(
+          { workerId: "main_worker" },
+          {
+            $set: {
+              status: "Degraded",
+              lastFailedPing: new Date(),
+              lastPingDuration: duration,
+              lastPingTime: new Date()
+            },
+            $inc: { failureCount: 1 }
+          },
+          { upsert: true, new: true }
+        );
+        console.warn(`[Cold-Start Worker] Self-ping failed: ${pingErr.message}`);
+      }
+    };
+
+    console.log(`[Cold-Start Worker] Initializing self-ping worker for ${backendUrl}`);
+    setTimeout(triggerSelfPing, 5000);
+    setInterval(triggerSelfPing, pingInterval);
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (err) => {

@@ -1,5 +1,4 @@
 const os = require("os");
-const dns = require("dns");
 const mongoose = require("mongoose");
 const ErrorLog = require("../models/ErrorLog");
 const Enrollment = require("../models/Enrollment");
@@ -9,64 +8,245 @@ const LMSActivityProgress = require("../models/LMSActivityProgress");
 const LMSCertificate = require("../models/LMSCertificate");
 const asyncHandler = require("../middleware/asyncHandler");
 const SystemSetting = require("../models/SystemSetting");
-const Payment = require("../models/Payment");
 const SecurityEvent = require("../models/SecurityEvent");
 const RequestLog = require("../models/RequestLog");
-const DocumentGenerationLog = require("../models/DocumentGenerationLog");
 const IntegrityAudit = require("../models/IntegrityAudit");
 const AuditLog = require("../models/AuditLog");
 const Document = require("../models/Document");
-const Submission = require("../models/Submission");
-const AssignmentSubmission = require("../models/AssignmentSubmission");
 const InternshipApplication = require("../models/InternshipApplication");
 const ActivityProgress = require("../models/ActivityProgress");
+const CentralLog = require("../models/CentralLog");
+const ColdStartWorker = require("../models/ColdStartWorker");
 const { getEventLoopData } = require("../utils/eventLoopMonitor");
 const { updateMaintenanceCache } = require("../middleware/maintenanceMiddleware");
 
-// @desc    Get detailed system health status
-// @route   GET /api/admin/system/health
+// --- HELPER SEEDING FUNCTION ---
+const seedCentralLogsOnDemand = async () => {
+  try {
+    const count = await CentralLog.countDocuments();
+    if (count > 0) return;
+
+    console.log("[Seeder] CentralLog is empty. Seeding historical logs asynchronously...");
+
+    // 1. Seed recent errors
+    const errorLogs = await ErrorLog.find().sort({ createdAt: -1 }).limit(100).lean();
+    const centralErrors = errorLogs.map((doc) => ({
+      timestamp: doc.createdAt,
+      user: doc.user || null,
+      method: doc.method || "",
+      route: doc.path || "",
+      status: doc.severity === "critical" ? "500" : "400",
+      ipAddress: doc.ip || "",
+      message: doc.message,
+      logType: doc.severity === "warning" ? "warning" : "error",
+      severity: doc.severity || "error",
+      details: { stack: doc.stack, metadata: doc.metadata },
+    }));
+
+    // 2. Seed recent security events
+    const securityEvents = await SecurityEvent.find().sort({ timestamp: -1 }).limit(100).lean();
+    const centralSecurity = securityEvents.map((doc) => ({
+      timestamp: doc.timestamp,
+      user: doc.user || null,
+      method: "",
+      route: (doc.details && doc.details.path) || "",
+      status: "401",
+      ipAddress: doc.ipAddress || "",
+      message: doc.action,
+      logType: "security",
+      severity: doc.eventType === "failed_login" ? "warning" : "error",
+      details: doc.details,
+    }));
+
+    // 3. Seed recent audit logs
+    const auditLogs = await AuditLog.find().sort({ createdAt: -1 }).limit(100).lean();
+    const centralAudits = auditLogs.map((doc) => ({
+      timestamp: doc.createdAt,
+      user: doc.admin || null,
+      method: "",
+      route: "",
+      status: "200",
+      ipAddress: doc.ipAddress || "",
+      message: `${doc.actionType} on ${doc.targetType}`,
+      logType: "audit",
+      severity: "info",
+      details: doc.details,
+    }));
+
+    const allLogs = [...centralErrors, ...centralSecurity, ...centralAudits];
+    if (allLogs.length > 0) {
+      allLogs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+      await CentralLog.insertMany(allLogs);
+      console.log(`[Seeder] Seeded ${allLogs.length} historical logs into CentralLog successfully.`);
+    }
+  } catch (err) {
+    console.error("[Seeder] Failed to seed CentralLogs:", err.message);
+  }
+};
+
+// @desc    Get system status overview hub
+// @route   GET /api/admin/system/overview
 // @access  Private/Admin
-const getSystemHealth = asyncHandler(async (req, res) => {
+const getSystemOverview = asyncHandler(async (req, res) => {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
-  
-  // 1. Process Memory usage
+
+  // 1. process memory usage
   const mem = process.memoryUsage();
   const rssMB = Number((mem.rss / 1024 / 1024).toFixed(2));
   const heapUsedMB = Number((mem.heapUsed / 1024 / 1024).toFixed(2));
   const heapTotalMB = Number((mem.heapTotal / 1024 / 1024).toFixed(2));
   const externalMB = Number((mem.external / 1024 / 1024).toFixed(2));
   const heapUsagePercentage = Number(((mem.heapUsed / mem.heapTotal) * 100).toFixed(2));
-  const rssUsagePercentage = Number(((mem.rss / os.totalmem()) * 100).toFixed(2));
 
-  // 2. Event loop lag details
+  // 2. Event Loop & API Success Rate
   const eventLoop = getEventLoopData();
+  const totalReq = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay } });
+  const failedReq = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay }, statusCode: { $gte: 400 } });
+  const successRate = totalReq ? Number((((totalReq - failedReq) / totalReq) * 100).toFixed(2)) : 100;
 
-  // 3. Database status & latency
-  const dbStart = Date.now();
-  let dbPing = 0;
-  let dbStatus = "Disconnected";
-  try {
-    if (mongoose.connection.readyState === 1) {
-      await mongoose.connection.db.admin().ping();
-      dbPing = Date.now() - dbStart;
-      dbStatus = "Connected";
-    } else if (mongoose.connection.readyState === 2) {
-      dbStatus = "Connecting";
-    }
-  } catch {
-    dbPing = -1;
-    dbStatus = "Disconnected";
+  // 3. Dynamic Backend Status
+  let backendStatus = "Healthy";
+  if (
+    mongoose.connection.readyState !== 1 || 
+    eventLoop.averageLag > 300 || 
+    rssMB > 480 || 
+    (totalReq >= 10 && successRate < 50)
+  ) {
+    backendStatus = "Critical";
+  } else if (
+    mongoose.connection.readyState === 2 || 
+    eventLoop.averageLag > 100 || 
+    rssMB > 400 || 
+    (totalReq >= 10 && successRate < 85)
+  ) {
+    backendStatus = "Warning";
   }
 
-  // 4. API Performance Center calculations
-  const totalRequestsToday = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay } });
-  const successfulRequestsToday = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay }, statusCode: { $lt: 400 } });
-  const failedRequestsToday = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay }, statusCode: { $gte: 400 } });
-  
-  const successRate = totalRequestsToday ? Number(((successfulRequestsToday / totalRequestsToday) * 100).toFixed(2)) : 100;
-  const errorRate = totalRequestsToday ? Number(((failedRequestsToday / totalRequestsToday) * 100).toFixed(2)) : 0;
+  // 4. MongoDB connection status
+  let dbStatus = "Disconnected";
+  if (mongoose.connection.readyState === 1) {
+    dbStatus = "Healthy";
+  } else if (mongoose.connection.readyState === 2) {
+    dbStatus = "Warning";
+  }
 
+  // 5. Active users count
+  const activeUsersToday = await User.countDocuments({ lastActive: { $gte: startOfDay } });
+
+  // 6. API Requests
+  const apiRequestsToday = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay } });
+
+  // 7. Errors today
+  const errorsToday = await CentralLog.countDocuments({
+    logType: { $in: ["error", "warning"] },
+    timestamp: { $gte: startOfDay }
+  });
+
+  // 8. Maintenance Mode Status
+  let maintenanceConfig = await SystemSetting.findOne({ key: "maintenance_config" });
+  const maintenanceMode = maintenanceConfig ? maintenanceConfig.maintenanceMode : false;
+
+  // 9. Uptime
+  const uptime = process.uptime();
+
+  // Last deployment and Git Commit
+  let buildTimestamp = null;
+  try {
+    const fs = require("fs");
+    const path = require("path");
+    const stats = fs.statSync(path.join(__dirname, "../index.js"));
+    buildTimestamp = stats.mtime;
+  } catch {
+    buildTimestamp = new Date();
+  }
+
+  let gitCommit = "N/A";
+  let gitBranch = "N/A";
+  try {
+    const { execSync } = require("child_process");
+    gitCommit = execSync("git rev-parse --short HEAD", { timeout: 1000 }).toString().trim();
+    gitBranch = execSync("git rev-parse --abbrev-ref HEAD", { timeout: 1000 }).toString().trim();
+  } catch {
+    if (process.env.RENDER_GIT_COMMIT) gitCommit = process.env.RENDER_GIT_COMMIT.substring(0, 7);
+    if (process.env.RENDER_GIT_BRANCH) gitBranch = process.env.RENDER_GIT_BRANCH;
+  }
+
+  // 10. Cold Start Worker Metrics
+  let workerStatus = {
+    status: "Inactive",
+    lastSuccessPing: null,
+    lastFailedPing: null,
+    successCount: 0,
+    failureCount: 0,
+    lastPingDuration: 0,
+    lastPingTime: null,
+    successRate: 100
+  };
+
+  const workerDoc = await ColdStartWorker.findOne({ workerId: "main_worker" });
+  if (workerDoc) {
+    const total = workerDoc.successCount + workerDoc.failureCount;
+    const rate = total > 0 ? Number(((workerDoc.successCount / total) * 100).toFixed(1)) : 100;
+    workerStatus = {
+      status: workerDoc.status,
+      lastSuccessPing: workerDoc.lastSuccessPing,
+      lastFailedPing: workerDoc.lastFailedPing,
+      successCount: workerDoc.successCount,
+      failureCount: workerDoc.failureCount,
+      lastPingDuration: workerDoc.lastPingDuration,
+      lastPingTime: workerDoc.lastPingTime,
+      successRate: rate
+    };
+  }
+
+  res.json({
+    backendStatus,
+    dbStatus,
+    dbPing: 0,
+    memory: {
+      rss: rssMB,
+      heapUsed: heapUsedMB,
+      heapTotal: heapTotalMB,
+      external: externalMB,
+      percentage: heapUsagePercentage
+    },
+    activeUsers: activeUsersToday,
+    apiRequestsToday,
+    apiSuccessRate: successRate,
+    errorsToday,
+    maintenanceMode,
+    uptime,
+    deployment: {
+      environment: process.env.NODE_ENV || "development",
+      deploymentTimestamp: new Date(Date.now() - process.uptime() * 1000),
+      buildTimestamp,
+      gitCommit,
+      gitBranch
+    },
+    coldStartWorker: workerStatus
+  });
+});
+
+// @desc    Get real-time performance metrics
+// @route   GET /api/admin/system/performance
+// @access  Private/Admin
+const getSystemPerformance = asyncHandler(async (req, res) => {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const mem = process.memoryUsage();
+  const rssMB = Number((mem.rss / 1024 / 1024).toFixed(2));
+  const heapUsedMB = Number((mem.heapUsed / 1024 / 1024).toFixed(2));
+  const heapTotalMB = Number((mem.heapTotal / 1024 / 1024).toFixed(2));
+  const externalMB = Number((mem.external / 1024 / 1024).toFixed(2));
+
+  const cpuLoad = os.loadavg();
+  const uptime = process.uptime();
+  const eventLoop = getEventLoopData();
+
+  const totalRequestsToday = await RequestLog.countDocuments({ timestamp: { $gte: startOfDay } });
+  
   const responseTimeAgg = await RequestLog.aggregate([
     { $match: { timestamp: { $gte: startOfDay } } },
     { $group: { _id: null, avgTime: { $avg: "$responseTime" } } }
@@ -98,366 +278,154 @@ const getSystemHealth = asyncHandler(async (req, res) => {
     }
   ]);
 
-  // 5. Payment Health
-  const paymentsToday = await Payment.countDocuments({ createdAt: { $gte: startOfDay } });
-  const verifiedPaymentsToday = await Payment.countDocuments({ createdAt: { $gte: startOfDay }, status: "captured" });
-  const pendingPaymentsToday = await Payment.countDocuments({ createdAt: { $gte: startOfDay }, status: "created" });
-  const failedPaymentsToday = await Payment.countDocuments({ createdAt: { $gte: startOfDay }, status: "failed" });
+  const last5Mins = new Date(Date.now() - 5 * 60 * 1000);
+  const requestsLast5Mins = await RequestLog.countDocuments({ timestamp: { $gte: last5Mins } });
+  const rpm = Number((requestsLast5Mins / 5).toFixed(1));
 
-  const razorpayFailuresToday = await SecurityEvent.countDocuments({
-    eventType: "suspicious_request",
-    timestamp: { $gte: startOfDay },
-    action: /Razorpay signature verification failed/i
-  });
-  
-  const webhookFailuresToday = await SecurityEvent.countDocuments({
-    eventType: "suspicious_request",
-    timestamp: { $gte: startOfDay },
-    action: /Razorpay Webhook signature verification failed/i
-  });
-
-  const duplicateAttemptsToday = await SecurityEvent.countDocuments({
-    eventType: "suspicious_request",
-    timestamp: { $gte: startOfDay },
-    action: /Duplicate payment/i
-  });
-
-  const paymentSuccessRate = paymentsToday ? Number(((verifiedPaymentsToday / paymentsToday) * 100).toFixed(2)) : 100;
-
-  // Payments chart trends (last 7 days)
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
-
-  const paymentTrends = await Payment.aggregate([
-    { $match: { createdAt: { $gte: sevenDaysAgo } } },
-    { $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-        total: { $sum: 1 },
-        verified: { $sum: { $cond: [{ $eq: ["$status", "captured"] }, 1, 0] } },
-        failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } }
-      }
+  res.json({
+    memory: {
+      rss: rssMB,
+      heapUsed: heapUsedMB,
+      heapTotal: heapTotalMB,
+      external: externalMB,
+      percentage: Number(((mem.heapUsed / mem.heapTotal) * 100).toFixed(2))
     },
-    { $sort: { _id: 1 } }
-  ]);
-
-  // 6. LMS Health
-  const activeStudents = (await Enrollment.distinct("user", { status: "Active" })).length;
-  const activeEnrollments = await Enrollment.countDocuments({ status: "Active" });
-  const completedPrograms = await Enrollment.countDocuments({ status: "Completed" });
-  const certificatesIssued = await LMSCertificate.countDocuments();
-  const assignmentSubmissions = await AssignmentSubmission.countDocuments();
-
-  // LMS Integrity Summary
-  const lmsIntegrity = {
-    missingPrograms: 0,
-    missingStudents: 0,
-    brokenEnrollments: 0
-  };
-  
-  const enrollmentPrograms = await Enrollment.distinct("program");
-  const existingPrograms = await Program.distinct("_id");
-  const missingProgramIds = enrollmentPrograms.filter(p => !existingPrograms.some(ep => ep.toString() === p.toString()));
-  lmsIntegrity.missingPrograms = await Enrollment.countDocuments({ program: { $in: missingProgramIds } });
-
-  const enrollmentUsers = await Enrollment.distinct("user");
-  const existingUsers = await User.distinct("_id");
-  const missingUserIds = enrollmentUsers.filter(u => !existingUsers.some(eu => eu.toString() === u.toString()));
-  lmsIntegrity.missingStudents = await Enrollment.countDocuments({ user: { $in: missingUserIds } });
-
-  const progressEnrollments = await LMSActivityProgress.distinct("enrollment");
-  const certEnrollments = await LMSCertificate.distinct("enrollment");
-  const uniqueProgressCertEnrollments = Array.from(new Set([...progressEnrollments, ...certEnrollments]));
-  const existingEnrollments = await Enrollment.distinct("_id");
-  const missingEnrollmentIds = uniqueProgressCertEnrollments.filter(e => !existingEnrollments.some(ee => ee.toString() === e.toString()));
-  
-  lmsIntegrity.brokenEnrollments = (await LMSActivityProgress.countDocuments({ enrollment: { $in: missingEnrollmentIds } })) + 
-                                   (await LMSCertificate.countDocuments({ enrollment: { $in: missingEnrollmentIds } }));
-
-  // 7. Document Generation Health
-  const offerLettersGen = await DocumentGenerationLog.countDocuments({ documentType: "offerLetter", success: true });
-  const certificatesGen = await DocumentGenerationLog.countDocuments({ documentType: "certificate", success: true });
-  const locGen = await DocumentGenerationLog.countDocuments({ documentType: "loc", success: true });
-  const internshipDetailsGen = await DocumentGenerationLog.countDocuments({ documentType: "internshipDetails", success: true });
-  const attendanceGen = await DocumentGenerationLog.countDocuments({ documentType: "attendance", success: true });
-  const paymentReceiptsGen = await DocumentGenerationLog.countDocuments({ documentType: "paymentReceipt", success: true });
-
-  const docStats = await DocumentGenerationLog.aggregate([
-    { $group: {
-        _id: null,
-        total: { $sum: 1 },
-        successes: { $sum: { $cond: ["$success", 1, 0] } },
-        avgTime: { $avg: "$duration" },
-        maxTime: { $max: "$duration" }
-      }
-    }
-  ]);
-
-  const docTotal = docStats.length ? docStats[0].total : 0;
-  const docSuccesses = docStats.length ? docStats[0].successes : 0;
-  const docAvgTime = docStats.length ? Number(docStats[0].avgTime.toFixed(2)) : 0;
-  const docMaxTime = docStats.length ? docStats[0].maxTime : 0;
-  const docSuccessRate = docTotal ? Number(((docSuccesses / docTotal) * 100).toFixed(2)) : 100;
-  const docFailedCount = docTotal - docSuccesses;
-
-  const docTrends = await DocumentGenerationLog.aggregate([
-    { $match: { createdAt: { $gte: sevenDaysAgo } } },
-    { $group: {
-        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-        count: { $sum: 1 },
-        successes: { $sum: { $cond: ["$success", 1, 0] } }
-      }
+    cpu: {
+      loadavg: cpuLoad,
+      cores: os.cpus().length,
+      platform: os.platform()
     },
-    { $sort: { _id: 1 } }
-  ]);
-
-  // 8. Security Events
-  const failedLogins = await SecurityEvent.countDocuments({ eventType: "failed_login", timestamp: { $gte: startOfDay } });
-  const unauthorizedAccesses = await SecurityEvent.countDocuments({ eventType: "unauthorized_access", timestamp: { $gte: startOfDay } });
-  const invalidJWTs = await SecurityEvent.countDocuments({ eventType: "invalid_jwt", timestamp: { $gte: startOfDay } });
-  const suspiciousRequests = await SecurityEvent.countDocuments({ eventType: "suspicious_request", timestamp: { $gte: startOfDay } });
-  const adminActionsToday = await AuditLog.countDocuments({ createdAt: { $gte: startOfDay } });
-
-  const securityEventsLog = await SecurityEvent.find()
-    .populate("user", "name email")
-    .sort({ timestamp: -1 })
-    .limit(10)
-    .lean();
-
-  // 9. User Activity
-  const usersActiveToday = await User.countDocuments({ lastActive: { $gte: startOfDay } });
-  const studentsActiveToday = await User.countDocuments({ role: "client", lastActive: { $gte: startOfDay } });
-  const adminsActiveToday = await User.countDocuments({ role: "admin", lastActive: { $gte: startOfDay } });
-
-  // Combined Activity Feed
-  const submissionsFeed = await Submission.find().populate("student", "name email").sort({ createdAt: -1 }).limit(10).lean();
-  const assignmentsFeed = await AssignmentSubmission.find().populate("user", "name email").populate("activity", "title").sort({ createdAt: -1 }).limit(10).lean();
-  const auditLogsFeed = await AuditLog.find().populate("admin", "name email").sort({ createdAt: -1 }).limit(10).lean();
-
-  const combinedFeed = [];
-  submissionsFeed.forEach(s => {
-    combinedFeed.push({
-      id: s._id,
-      timestamp: s.createdAt,
-      type: "internship_submission",
-      user: s.student,
-      message: `Submitted internship task for domain "${s.internshipApplication?.preferredDomain || "Internship"}"`
-    });
-  });
-  assignmentsFeed.forEach(a => {
-    combinedFeed.push({
-      id: a._id,
-      timestamp: a.submittedAt || a.createdAt,
-      type: "lms_submission",
-      user: a.user,
-      message: `Submitted LMS assignment for "${a.activity?.title || "LMS Module"}"`
-    });
-  });
-  auditLogsFeed.forEach(a => {
-    combinedFeed.push({
-      id: a._id,
-      timestamp: a.createdAt,
-      type: "admin_action",
-      user: a.admin,
-      message: `Admin action: ${a.actionType} on ${a.targetType}`
-    });
-  });
-
-  combinedFeed.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-  const recentActivityFeed = combinedFeed.slice(0, 15);
-
-  // 10. Deployment Info
-  const fs = require("fs");
-  const path = require("path");
-  let buildTimestamp = null;
-  try {
-    const stats = fs.statSync(path.join(__dirname, "../index.js"));
-    buildTimestamp = stats.mtime;
-  } catch {
-    buildTimestamp = new Date();
-  }
-
-  let gitCommit = "N/A";
-  let gitBranch = "N/A";
-  try {
-    const { execSync } = require("child_process");
-    gitCommit = execSync("git rev-parse --short HEAD", { timeout: 1000 }).toString().trim();
-    gitBranch = execSync("git rev-parse --abbrev-ref HEAD", { timeout: 1000 }).toString().trim();
-  } catch {
-    if (process.env.RENDER_GIT_COMMIT) gitCommit = process.env.RENDER_GIT_COMMIT.substring(0, 7);
-    if (process.env.RENDER_GIT_BRANCH) gitBranch = process.env.RENDER_GIT_BRANCH;
-  }
-
-  const deployment = {
-    environment: process.env.NODE_ENV || "development",
-    backendVersion: "1.0.0",
-    applicationVersion: "0.1.0",
-    deploymentTimestamp: new Date(Date.now() - process.uptime() * 1000),
-    buildTimestamp,
-    gitCommit,
-    gitBranch
-  };
-
-  // 11. System Health Score (0 - 100)
-  let healthScore = 0;
-  // MongoDB Connection State (20%)
-  if (mongoose.connection.readyState === 1) healthScore += 20;
-  // API Success Rate (20%)
-  healthScore += 20 * (successRate / 100);
-  // Payment Success Rate (15%)
-  healthScore += 15 * (paymentSuccessRate / 100);
-  // LMS Integrity (15%)
-  const totalEnrollments = await Enrollment.countDocuments();
-  const totalLmsOrphans = lmsIntegrity.missingPrograms + lmsIntegrity.missingStudents + lmsIntegrity.brokenEnrollments;
-  const lmsIntegrityRatio = totalEnrollments ? Math.max(0, 1 - (totalLmsOrphans / totalEnrollments)) : 1;
-  healthScore += 15 * lmsIntegrityRatio;
-  // Error Rate (15%): deduction based on errors today vs total API calls today.
-  const errorPoints = Math.max(0, 15 * (1 - (errorRate / 10))); // Lose all 15 points if error rate is 10% or more
-  healthScore += errorPoints;
-  // Memory Usage load (10%)
-  const memoryRatio = Math.max(0, 1 - (heapUsagePercentage / 100));
-  healthScore += 10 * memoryRatio;
-  // Event Loop Lag (5%)
-  if (eventLoop.status === "Healthy") healthScore += 5;
-  else if (eventLoop.status === "Warning") healthScore += 2;
-
-  healthScore = Math.round(healthScore);
-
-  let healthScoreStatus = "Excellent";
-  if (healthScore < 50) healthScoreStatus = "Critical";
-  else if (healthScore < 80) healthScoreStatus = "Warning";
-  else if (healthScore < 90) healthScoreStatus = "Good";
-
-  // Check DNS resolution
-  let dnsStatus = "Unknown";
-  try {
-    await new Promise((resolve, reject) => {
-      dns.resolve("google.com", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-    dnsStatus = "Healthy";
-  } catch {
-    dnsStatus = "Unhealthy";
-  }
-
-  // Combined health payload
-  const health = {
-    uptime: process.uptime(),
-    timestamp: Date.now(),
-    system: {
-      platform: os.platform(),
-      release: os.release(),
-      totalMemory: os.totalmem(),
-      freeMemory: os.freemem(),
-      // Backward compatibility variables
-      memoryUsagePercentage: heapUsagePercentage,
-      cpuLoad: os.loadavg(),
-      // Node process metrics
-      nodeMemory: {
-        rss: rssMB,
-        heapUsed: heapUsedMB,
-        heapTotal: heapTotalMB,
-        external: externalMB,
-        heapUsagePercentage,
-        rssUsagePercentage,
-        lastUpdated: new Date()
-      }
-    },
+    uptime,
     eventLoop,
-    services: {
-      database: {
-        status: dbStatus === "Connected" ? "Healthy" : "Unhealthy",
-        connectionState: mongoose.connection.readyState,
-        ping: dbPing
-      },
-      cloudinary: {
-        status: (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY) ? "Configured" : "Not Configured",
-      },
-      razorpay: {
-        status: (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) ? "Configured" : "Not Configured",
-      },
-      googleOAuth: {
-        status: (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) ? "Configured" : "Not Configured",
-      }
-    },
-    dns: {
-      status: dnsStatus,
-    },
-    apiPerformance: {
+    apiMetrics: {
       totalRequestsToday,
-      successfulRequestsToday,
-      failedRequestsToday,
-      successRate,
-      errorRate,
       avgResponseTime,
       slowestEndpoint: slowestRequest ? `${slowestRequest.method} ${slowestRequest.route} (${slowestRequest.responseTime}ms)` : "N/A",
       fastestEndpoint: fastestRequest ? `${fastestRequest.method} ${fastestRequest.route} (${fastestRequest.responseTime}ms)` : "N/A",
-      topEndpoints
-    },
-    payments: {
-      paymentsToday,
-      verifiedPaymentsToday,
-      pendingPaymentsToday,
-      failedPaymentsToday,
-      failures: {
-        razorpayFailuresToday,
-        webhookFailuresToday,
-        duplicateAttemptsToday
-      },
-      paymentSuccessRate,
-      paymentTrends
-    },
-    lms: {
-      activeStudents,
-      activeEnrollments,
-      completedPrograms,
-      certificatesIssued,
-      assignmentSubmissions,
-      integrity: lmsIntegrity
-    },
-    documentGeneration: {
-      offerLettersGen,
-      certificatesGen,
-      locGen,
-      internshipDetailsGen,
-      attendanceGen,
-      paymentReceiptsGen,
-      successRate: docSuccessRate,
-      failedCount: docFailedCount,
-      avgTime: docAvgTime,
-      longestTime: docMaxTime,
-      trends: docTrends
-    },
-    security: {
-      failedLogins,
-      unauthorizedAccesses,
-      invalidJWTs,
-      suspiciousRequests,
-      adminActionsToday,
-      events: securityEventsLog
-    },
-    userActivity: {
-      usersActiveToday,
-      studentsActiveToday,
-      adminsActiveToday,
-      recentActivityFeed
-    },
-    deployment,
-    healthScore: {
-      score: healthScore,
-      status: healthScoreStatus
+      topEndpoints,
+      rpm
     }
+  });
+});
+
+// --- CACHE VARS FOR DATABASE METRICS ---
+let dbStatsCache = null;
+let dbStatsCacheTime = 0;
+
+// @desc    Get real MongoDB diagnostic metrics
+// @route   GET /api/admin/system/database
+// @access  Private/Admin
+const getDatabaseDiagnostics = asyncHandler(async (req, res) => {
+  const forceRefresh = req.query.refresh === "true";
+  const now = Date.now();
+
+  if (!forceRefresh && dbStatsCache && (now - dbStatsCacheTime < 60000)) {
+    return res.json({ ...dbStatsCache, cached: true });
+  }
+
+  const dbStart = Date.now();
+  let dbPing = 0;
+  let dbStatus = "Disconnected";
+  try {
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.connection.db.admin().ping();
+      dbPing = Date.now() - dbStart;
+      dbStatus = "Connected";
+    } else if (mongoose.connection.readyState === 2) {
+      dbStatus = "Connecting";
+    }
+  } catch {
+    dbPing = -1;
+    dbStatus = "Disconnected";
+  }
+
+  let collectionsCount = 0;
+  let totalDocs = 0;
+  let indexesCount = 0;
+
+  const businessCounts = {
+    Users: 0,
+    Applications: 0,
+    Enrollments: 0,
+    Programs: 0,
+    Certificates: 0,
+    ProgressLogs: 0
   };
 
-  res.json(health);
+  if (mongoose.connection.readyState === 1) {
+    try {
+      const db = mongoose.connection.db;
+      const collections = await db.listCollections().toArray();
+      collectionsCount = collections.length;
+
+      const [
+        users,
+        applications,
+        enrollments,
+        programs,
+        certificates,
+        lmsProgress,
+        internProgress
+      ] = await Promise.all([
+        User.countDocuments(),
+        InternshipApplication.countDocuments(),
+        Enrollment.countDocuments(),
+        Program.countDocuments(),
+        LMSCertificate.countDocuments(),
+        LMSActivityProgress.countDocuments(),
+        ActivityProgress.countDocuments()
+      ]);
+
+      businessCounts.Users = users;
+      businessCounts.Applications = applications;
+      businessCounts.Enrollments = enrollments;
+      businessCounts.Programs = programs;
+      businessCounts.Certificates = certificates;
+      businessCounts.ProgressLogs = lmsProgress + internProgress;
+
+      for (const col of collections) {
+        try {
+          const stats = await db.collection(col.name).stats();
+          totalDocs += stats.count || 0;
+          indexesCount += stats.nindexes || 0;
+        } catch {
+          // stats error fallback
+        }
+      }
+    } catch (dbStatsError) {
+      console.error("Error fetching database metrics:", dbStatsError.message);
+    }
+  }
+
+  dbStatsCache = {
+    dbStatus,
+    connectionState: mongoose.connection.readyState,
+    dbPing,
+    collectionsCount,
+    totalDocuments: totalDocs,
+    indexesCount,
+    businessCounts
+  };
+  dbStatsCacheTime = now;
+
+  res.json({ ...dbStatsCache, cached: false });
 });
+
+// --- CACHE VARS FOR INTEGRITY REPORT ---
+let integrityReportCache = null;
+let integrityReportCacheTime = 0;
 
 // @desc    Audit database relationships and return data integrity metrics
 // @route   GET /api/admin/system/integrity
 // @access  Private/Admin
 const getDataIntegrityReport = asyncHandler(async (req, res) => {
+  const forceRefresh = req.query.refresh === "true";
+  const now = Date.now();
+
+  if (!forceRefresh && integrityReportCache && (now - integrityReportCacheTime < 60000)) {
+    return res.json({ ...integrityReportCache, cached: true });
+  }
+
   // 1. Orphan Users (role client/student who have no InternshipApplication and no Enrollment)
   const studentUsers = await User.find({ role: "client" }).distinct("_id");
   const userApplications = await InternshipApplication.distinct("user");
@@ -469,28 +437,28 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
   ].filter(Boolean));
 
   const orphanUsers = [];
-  for (const uid of studentUsers) {
-    if (!activeUserIds.has(uid.toString())) {
-      const u = await User.findById(uid).select("name email role createdAt").lean();
-      if (u) orphanUsers.push(u);
+  const allStudentUsers = await User.find({ _id: { $in: studentUsers } }).select("name email role createdAt").lean();
+  for (const u of allStudentUsers) {
+    if (!activeUserIds.has(u._id.toString())) {
+      orphanUsers.push(u);
     }
   }
 
   // 2. Orphan Applications (user ref is missing/broken)
-  const applications = await InternshipApplication.find().lean();
+  const applications = await InternshipApplication.find().select("_id name email preferredDomain user").lean();
   const orphanApplications = [];
+  const applicationUserIds = applications.map(app => app.user).filter(Boolean);
+  const existingUserIds = new Set((await User.find({ _id: { $in: applicationUserIds } }).distinct("_id")).map(id => id.toString()));
+
   for (const app of applications) {
-    if (app.user) {
-      const userExists = await User.exists({ _id: app.user });
-      if (!userExists) {
-        orphanApplications.push({
-          applicationId: app._id,
-          name: app.name,
-          email: app.email,
-          preferredDomain: app.preferredDomain,
-          userRef: app.user
-        });
-      }
+    if (app.user && !existingUserIds.has(app.user.toString())) {
+      orphanApplications.push({
+        applicationId: app._id,
+        name: app.name,
+        email: app.email,
+        preferredDomain: app.preferredDomain,
+        userRef: app.user
+      });
     }
   }
 
@@ -499,9 +467,21 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
   const orphanEnrollments = [];
   const duplicateMap = {};
   const duplicateEnrollments = [];
+
+  const enrollmentUserIds = enrollments.map(e => e.user).filter(Boolean);
+  const enrollmentProgramIds = enrollments.map(e => e.program).filter(Boolean);
+
+  const [existingEnrollmentUsers, existingEnrollmentPrograms] = await Promise.all([
+    User.find({ _id: { $in: enrollmentUserIds } }).distinct("_id"),
+    Program.find({ _id: { $in: enrollmentProgramIds } }).distinct("_id")
+  ]);
+
+  const existingEnrollmentUserSet = new Set(existingEnrollmentUsers.map(id => id.toString()));
+  const existingEnrollmentProgramSet = new Set(existingEnrollmentPrograms.map(id => id.toString()));
+
   for (const enrollment of enrollments) {
-    const userExists = enrollment.user ? await User.exists({ _id: enrollment.user }) : false;
-    const programExists = enrollment.program ? await Program.exists({ _id: enrollment.program }) : false;
+    const userExists = enrollment.user ? existingEnrollmentUserSet.has(enrollment.user.toString()) : false;
+    const programExists = enrollment.program ? existingEnrollmentProgramSet.has(enrollment.program.toString()) : false;
     
     if (!userExists || !programExists) {
       orphanEnrollments.push({
@@ -527,13 +507,16 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
     }
   }
 
-  // 4. Orphan Certificates (LMSCertificate or Document referencing missing records)
+  // 4. Orphan Certificates
   const lmsCertificates = await LMSCertificate.find().lean();
   const docs = await Document.find().lean();
   const orphanCertificates = [];
-  
+
+  const certEnrollmentIds = lmsCertificates.map(c => c.enrollment).filter(Boolean);
+  const existingEnrollmentIdsSet = new Set((await Enrollment.find({ _id: { $in: certEnrollmentIds } }).distinct("_id")).map(id => id.toString()));
+
   for (const cert of lmsCertificates) {
-    const enrollmentExists = cert.enrollment ? await Enrollment.exists({ _id: cert.enrollment }) : false;
+    const enrollmentExists = cert.enrollment ? existingEnrollmentIdsSet.has(cert.enrollment.toString()) : false;
     if (!enrollmentExists) {
       orphanCertificates.push({
         certificateId: cert._id,
@@ -544,9 +527,20 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
     }
   }
 
+  const docAppIds = docs.map(d => d.applicationId).filter(Boolean);
+  const docUserIds = docs.map(d => d.user).filter(Boolean);
+
+  const [existingDocApps, existingDocUsers] = await Promise.all([
+    InternshipApplication.find({ _id: { $in: docAppIds } }).distinct("_id"),
+    User.find({ _id: { $in: docUserIds } }).distinct("_id")
+  ]);
+
+  const existingDocAppsSet = new Set(existingDocApps.map(id => id.toString()));
+  const existingDocUsersSet = new Set(existingDocUsers.map(id => id.toString()));
+
   for (const doc of docs) {
-    const appExists = doc.applicationId ? await InternshipApplication.exists({ _id: doc.applicationId }) : false;
-    const userExists = doc.user ? await User.exists({ _id: doc.user }) : false;
+    const appExists = doc.applicationId ? existingDocAppsSet.has(doc.applicationId.toString()) : false;
+    const userExists = doc.user ? existingDocUsersSet.has(doc.user.toString()) : false;
     
     if (!appExists || !userExists) {
       orphanCertificates.push({
@@ -561,13 +555,16 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
     }
   }
 
-  // 5. Orphan Progress Logs (LMSActivityProgress or ActivityProgress)
+  // 5. Orphan Progress Logs
   const progressRecords = await LMSActivityProgress.find().lean();
   const internProgressRecords = await ActivityProgress.find().lean();
   const orphanProgress = [];
 
+  const progressEnrollmentIds = progressRecords.map(p => p.enrollment).filter(Boolean);
+  const existingProgressEnrollmentsSet = new Set((await Enrollment.find({ _id: { $in: progressEnrollmentIds } }).distinct("_id")).map(id => id.toString()));
+
   for (const progress of progressRecords) {
-    const enrollmentExists = progress.enrollment ? await Enrollment.exists({ _id: progress.enrollment }) : false;
+    const enrollmentExists = progress.enrollment ? existingProgressEnrollmentsSet.has(progress.enrollment.toString()) : false;
     if (!enrollmentExists) {
       orphanProgress.push({
         progressId: progress._id,
@@ -578,8 +575,11 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
     }
   }
 
+  const internProgressAppIds = internProgressRecords.map(p => p.internshipApplication).filter(Boolean);
+  const existingInternProgressAppsSet = new Set((await InternshipApplication.find({ _id: { $in: internProgressAppIds } }).distinct("_id")).map(id => id.toString()));
+
   for (const progress of internProgressRecords) {
-    const appExists = progress.internshipApplication ? await InternshipApplication.exists({ _id: progress.internshipApplication }) : false;
+    const appExists = progress.internshipApplication ? existingInternProgressAppsSet.has(progress.internshipApplication.toString()) : false;
     if (!appExists) {
       orphanProgress.push({
         progressId: progress._id,
@@ -607,10 +607,9 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
     }
   });
 
-  // Fetch audit history (latest 10 runs)
   const auditHistory = await IntegrityAudit.find().sort({ timestamp: -1 }).limit(10).lean();
 
-  res.json({
+  integrityReportCache = {
     summary: {
       orphanUsersCount: orphanUsers.length,
       orphanApplicationsCount: orphanApplications.length,
@@ -630,13 +629,97 @@ const getDataIntegrityReport = asyncHandler(async (req, res) => {
       orphanCertificates
     },
     auditHistory
-  });
+  };
+  integrityReportCacheTime = now;
+
+  res.json({ ...integrityReportCache, cached: false });
 });
 
-// @desc    Self-heal orphaned database references
+// @desc    Self-heal orphaned database references (with Safe Preview system)
 // @route   POST /api/admin/system/integrity/heal
 // @access  Private/Admin
 const healDataIntegrity = asyncHandler(async (req, res) => {
+  const isConfirm = req.body.confirm === true;
+
+  // 1. Calculate the preview metrics first
+  const healingPreview = {
+    recordsAffected: 0,
+    collectionsAffected: [],
+    actions: []
+  };
+
+  // Check Action 1: Re-link Orphan Enrollments
+  let repairableEnrollments = 0;
+  const enrollments = await Enrollment.find().populate("internshipApplication");
+  for (const enrollment of enrollments) {
+    if (enrollment.user) {
+      const userExists = await User.exists({ _id: enrollment.user });
+      if (!userExists && enrollment.internshipApplication && enrollment.internshipApplication.email) {
+        const matchingUser = await User.findOne({ email: enrollment.internshipApplication.email });
+        if (matchingUser) {
+          repairableEnrollments++;
+        }
+      }
+    }
+  }
+  if (repairableEnrollments > 0) {
+    healingPreview.actions.push({
+      action: "Re-link Orphaned Enrollments to users (by email matching)",
+      count: repairableEnrollments,
+      collection: "Enrollment"
+    });
+    healingPreview.recordsAffected += repairableEnrollments;
+    healingPreview.collectionsAffected.push("Enrollment");
+  }
+
+  // Check Action 2: Deletable Progress Records
+  let deletableProgress = 0;
+  const progressRecords = await LMSActivityProgress.find().lean();
+  for (const progress of progressRecords) {
+    const enrollmentExists = progress.enrollment ? await Enrollment.exists({ _id: progress.enrollment }) : false;
+    if (!enrollmentExists) {
+      deletableProgress++;
+    }
+  }
+  if (deletableProgress > 0) {
+    healingPreview.actions.push({
+      action: "Delete orphaned LMS Activity Progress records",
+      count: deletableProgress,
+      collection: "LMSActivityProgress"
+    });
+    healingPreview.recordsAffected += deletableProgress;
+    healingPreview.collectionsAffected.push("LMSActivityProgress");
+  }
+
+  // Check Action 3: Deletable Certificates
+  let deletableCerts = 0;
+  const certificates = await LMSCertificate.find().lean();
+  for (const cert of certificates) {
+    const enrollmentExists = cert.enrollment ? await Enrollment.exists({ _id: cert.enrollment }) : false;
+    if (!enrollmentExists) {
+      deletableCerts++;
+    }
+  }
+  if (deletableCerts > 0) {
+    healingPreview.actions.push({
+      action: "Delete orphaned LMS Certificates",
+      count: deletableCerts,
+      collection: "LMSCertificate"
+    });
+    healingPreview.recordsAffected += deletableCerts;
+    healingPreview.collectionsAffected.push("LMSCertificate");
+  }
+
+  // If not confirmed, return the safe preview summary
+  if (!isConfirm) {
+    return res.json({
+      success: true,
+      preview: true,
+      summary: healingPreview
+    });
+  }
+
+  // Execute Phase:
   const healingResults = {
     resolvedUsers: 0,
     cleanedProgressRecords: 0,
@@ -645,11 +728,9 @@ const healDataIntegrity = asyncHandler(async (req, res) => {
   };
 
   try {
-    // 1. Heal orphan enrollments by matching email addresses
-    const enrollments = await Enrollment.find().populate("internshipApplication");
+    // Execute Action 1: Re-link enrollments
     for (const enrollment of enrollments) {
       let resolvedUserId = enrollment.user;
-
       const userExists = resolvedUserId ? await User.exists({ _id: resolvedUserId }) : false;
       
       if (!userExists && enrollment.internshipApplication && enrollment.internshipApplication.email) {
@@ -666,9 +747,9 @@ const healDataIntegrity = asyncHandler(async (req, res) => {
       }
     }
 
-    // 2. Clean up orphaned progress records
-    const progressRecords = await LMSActivityProgress.find();
-    for (const progress of progressRecords) {
+    // Execute Action 2: Deleting progress records
+    const progressRecordsToDelete = await LMSActivityProgress.find();
+    for (const progress of progressRecordsToDelete) {
       const enrollmentExists = progress.enrollment ? await Enrollment.exists({ _id: progress.enrollment }) : false;
       if (!enrollmentExists) {
         await progress.deleteOne();
@@ -676,9 +757,9 @@ const healDataIntegrity = asyncHandler(async (req, res) => {
       }
     }
 
-    // 3. Clean up orphaned certificates
-    const certificates = await LMSCertificate.find();
-    for (const cert of certificates) {
+    // Execute Action 3: Deleting certificates
+    const certificatesToDelete = await LMSCertificate.find();
+    for (const cert of certificatesToDelete) {
       const enrollmentExists = cert.enrollment ? await Enrollment.exists({ _id: cert.enrollment }) : false;
       if (!enrollmentExists) {
         await cert.deleteOne();
@@ -686,13 +767,17 @@ const healDataIntegrity = asyncHandler(async (req, res) => {
       }
     }
 
-    // Log the healing activity to AuditLog
+    // Clear caches
+    integrityReportCache = null;
+
+    // Log the healing activity to AuditLog & CentralLog
     await AuditLog.create({
       admin: req.user._id,
       actionType: "HEAL_DATABASE_INTEGRITY",
       targetType: "System",
       targetId: req.user._id,
-      details: healingResults
+      details: healingResults,
+      ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress
     });
 
   } catch (error) {
@@ -701,11 +786,12 @@ const healDataIntegrity = asyncHandler(async (req, res) => {
 
   res.json({
     success: healingResults.errors.length === 0,
+    preview: false,
     results: healingResults
   });
 });
 
-// @desc    Get paginated and filtered error logs
+// @desc    Get paginated and filtered error logs (from CentralLog engine)
 // @route   GET /api/admin/system/logs
 // @access  Private/Admin
 const getErrorLogs = asyncHandler(async (req, res) => {
@@ -713,11 +799,17 @@ const getErrorLogs = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 20;
   const skip = (page - 1) * limit;
 
-  // Filters setup
+  // Run initial seeding asynchronously if CentralLog collection is empty
+  const centralCount = await CentralLog.countDocuments();
+  if (centralCount === 0) {
+    await seedCentralLogsOnDemand();
+  }
+
   const filter = {};
 
   if (req.query.resolvedStatus === "unresolved") {
-    filter.resolved = false;
+    filter.resolved = { $ne: true };
+    filter.severity = { $ne: "info" }; // skip informational audit logs in error view
   } else if (req.query.resolvedStatus === "resolved") {
     filter.resolved = true;
   }
@@ -726,19 +818,23 @@ const getErrorLogs = asyncHandler(async (req, res) => {
     filter.severity = req.query.severity;
   }
 
+  if (req.query.logType) {
+    filter.logType = req.query.logType;
+  }
+
   if (req.query.route) {
-    filter.path = new RegExp(req.query.route, "i");
+    filter.route = new RegExp(req.query.route, "i");
   }
 
   if (req.query.startDate || req.query.endDate) {
-    filter.createdAt = {};
+    filter.timestamp = {};
     if (req.query.startDate) {
-      filter.createdAt.$gte = new Date(req.query.startDate);
+      filter.timestamp.$gte = new Date(req.query.startDate);
     }
     if (req.query.endDate) {
       const end = new Date(req.query.endDate);
       end.setHours(23, 59, 59, 999);
-      filter.createdAt.$lte = end;
+      filter.timestamp.$lte = end;
     }
   }
 
@@ -757,18 +853,17 @@ const getErrorLogs = asyncHandler(async (req, res) => {
     filter.user = { $in: matchedUsers };
   }
 
-  const count = await ErrorLog.countDocuments(filter);
-  const logs = await ErrorLog.find(filter)
+  const count = await CentralLog.countDocuments(filter);
+  const logs = await CentralLog.find(filter)
     .populate("user", "name email")
-    .sort({ createdAt: -1 })
+    .sort({ timestamp: -1 })
     .skip(skip)
     .limit(limit);
 
-  // Stats summaries
-  const totalErrors = await ErrorLog.countDocuments();
-  const criticalErrors = await ErrorLog.countDocuments({ severity: "critical" });
-  const warningErrors = await ErrorLog.countDocuments({ severity: "warning" });
-  const resolvedErrors = await ErrorLog.countDocuments({ resolved: true });
+  const totalErrors = await CentralLog.countDocuments({ logType: { $in: ["error", "warning"] } });
+  const criticalErrors = await CentralLog.countDocuments({ severity: "critical" });
+  const warningErrors = await CentralLog.countDocuments({ severity: "warning" });
+  const resolvedErrors = await CentralLog.countDocuments({ resolved: true });
 
   res.json({
     logs,
@@ -784,25 +879,38 @@ const getErrorLogs = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Mark error log as resolved
+// @desc    Mark error log as resolved in both collections
 // @route   PUT /api/admin/system/logs/:id/resolve
 // @access  Private/Admin
 const resolveErrorLog = asyncHandler(async (req, res) => {
-  const log = await ErrorLog.findById(req.params.id);
+  const log = await CentralLog.findById(req.params.id);
   if (!log) {
-    res.status(404);
-    throw new Error("Error log not found");
+    const errLog = await ErrorLog.findById(req.params.id);
+    if (!errLog) {
+      res.status(404);
+      throw new Error("Log record not found");
+    }
+    errLog.resolved = true;
+    await errLog.save();
+    return res.json({ success: true, log: errLog });
   }
 
   log.resolved = true;
   await log.save();
 
+  // Resolve matching ErrorLogs in bulk
+  await ErrorLog.updateMany(
+    { message: log.message, createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } },
+    { resolved: true }
+  );
+
   await AuditLog.create({
     admin: req.user._id,
     actionType: "RESOLVE_ERROR_LOG",
-    targetType: "ErrorLog",
+    targetType: "CentralLog",
     targetId: log._id,
-    details: { message: log.message }
+    details: { message: log.message },
+    ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress
   });
 
   res.json({ success: true, log });
@@ -825,7 +933,38 @@ const getMaintenanceSettings = asyncHandler(async (req, res) => {
     });
   }
 
-  res.json(settings);
+  // Fetch Cold Start Worker status
+  let workerStatus = {
+    status: "Inactive",
+    lastSuccessPing: null,
+    lastFailedPing: null,
+    successCount: 0,
+    failureCount: 0,
+    lastPingDuration: 0,
+    lastPingTime: null,
+    successRate: 100
+  };
+
+  const workerDoc = await ColdStartWorker.findOne({ workerId: "main_worker" });
+  if (workerDoc) {
+    const total = workerDoc.successCount + workerDoc.failureCount;
+    const rate = total > 0 ? Number(((workerDoc.successCount / total) * 100).toFixed(1)) : 100;
+    workerStatus = {
+      status: workerDoc.status,
+      lastSuccessPing: workerDoc.lastSuccessPing,
+      lastFailedPing: workerDoc.lastFailedPing,
+      successCount: workerDoc.successCount,
+      failureCount: workerDoc.failureCount,
+      lastPingDuration: workerDoc.lastPingDuration,
+      lastPingTime: workerDoc.lastPingTime,
+      successRate: rate
+    };
+  }
+
+  res.json({
+    ...settings.toObject(),
+    coldStartWorker: workerStatus
+  });
 });
 
 // @desc    Update maintenance settings
@@ -860,29 +999,61 @@ const updateMaintenanceSettings = asyncHandler(async (req, res) => {
 
   await settings.save();
 
-  // Update in-memory cache in the middleware
   updateMaintenanceCache({
     maintenanceMode: settings.maintenanceMode,
     allowedUsers: settings.allowedUsers,
   });
 
-  // Log action
   await AuditLog.create({
     admin: req.user._id,
     actionType: "UPDATE_MAINTENANCE_MODE",
     targetType: "SystemSetting",
     targetId: settings._id,
-    details: { maintenanceMode, allowedUsersCount: settings.allowedUsers.length }
+    details: { maintenanceMode, allowedUsersCount: settings.allowedUsers.length },
+    ipAddress: req.ip || req.headers["x-forwarded-for"] || req.socket.remoteAddress
   });
 
   const populated = await SystemSetting.findOne({ key: "maintenance_config" })
     .populate("enabledBy", "name email");
 
-  res.json(populated);
+  // Fetch Cold Start Worker status
+  let workerStatus = {
+    status: "Inactive",
+    lastSuccessPing: null,
+    lastFailedPing: null,
+    successCount: 0,
+    failureCount: 0,
+    lastPingDuration: 0,
+    lastPingTime: null,
+    successRate: 100
+  };
+
+  const workerDoc = await ColdStartWorker.findOne({ workerId: "main_worker" });
+  if (workerDoc) {
+    const total = workerDoc.successCount + workerDoc.failureCount;
+    const rate = total > 0 ? Number(((workerDoc.successCount / total) * 100).toFixed(1)) : 100;
+    workerStatus = {
+      status: workerDoc.status,
+      lastSuccessPing: workerDoc.lastSuccessPing,
+      lastFailedPing: workerDoc.lastFailedPing,
+      successCount: workerDoc.successCount,
+      failureCount: workerDoc.failureCount,
+      lastPingDuration: workerDoc.lastPingDuration,
+      lastPingTime: workerDoc.lastPingTime,
+      successRate: rate
+    };
+  }
+
+  res.json({
+    ...populated.toObject(),
+    coldStartWorker: workerStatus
+  });
 });
 
 module.exports = {
-  getSystemHealth,
+  getSystemOverview,
+  getSystemPerformance,
+  getDatabaseDiagnostics,
   getDataIntegrityReport,
   healDataIntegrity,
   getErrorLogs,
