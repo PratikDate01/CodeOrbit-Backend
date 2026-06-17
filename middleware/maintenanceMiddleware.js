@@ -49,8 +49,8 @@ const maintenanceMiddleware = async (req, res, next) => {
   const exemptPaths = [
     "/api/ping",
     "/api/maintenance/status",
-    "/api/auth/google",
-    "/api/auth/google/callback",
+    "/auth/google",
+    "/auth/google/callback",
     "/uploads/",
     "/assets/"
   ];
