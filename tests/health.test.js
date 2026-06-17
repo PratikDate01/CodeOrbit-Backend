@@ -3,7 +3,15 @@ const request = require("supertest");
 const mongoose = require("mongoose");
 const app = require("../index");
 
+const connectDB = require("../config/db");
+
+jest.setTimeout(30000);
+
 describe("Backend Health Checks", () => {
+  beforeAll(async () => {
+    await connectDB();
+  });
+
   // Close DB connection after tests to prevent Jest from hanging
   afterAll(async () => {
     await mongoose.connection.close();

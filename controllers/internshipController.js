@@ -4,7 +4,7 @@ const Document = require("../models/Document");
 const AuditLog = require("../models/AuditLog");
 const asyncHandler = require("../middleware/asyncHandler");
 const { createNotification } = require("./notificationController");
-const { autoEnrollUser } = require("../utils/lmsHelpers");
+const { autoEnrollUser, isDomainMatch } = require("../utils/lmsHelpers");
 
 // @desc    Get all published programs
 // @route   GET /api/internships/programs
@@ -18,12 +18,25 @@ const getPublishedPrograms = asyncHandler(async (req, res) => {
 // @route   POST /api/internships/apply
 // @access  Private
 const applyForInternship = asyncHandler(async (req, res) => {
-  const { preferredDomain, duration, amount, formData } = req.body;
+  const { preferredDomain: inputDomain, duration, amount, formData } = req.body;
 
-  if (!preferredDomain) {
+  if (!inputDomain) {
     res.status(400);
     throw new Error("Preferred domain is required.");
   }
+
+  // Map the domain to the official Program's internshipDomain
+  const programs = await Program.find({ isPublished: true });
+  const getMappedDomain = (val) => {
+    if (!val) return val;
+    if (val.trim().toLowerCase() === "aiml") {
+      return "Artificial Intelligence & Machine Learning";
+    }
+    const match = programs.find(p => isDomainMatch(p.internshipDomain, val) || isDomainMatch(p.title, val));
+    return match ? match.internshipDomain : val;
+  };
+
+  const preferredDomain = getMappedDomain(inputDomain);
 
   // Check if user already has a pending or active application for this domain
   const existingApp = await InternshipApplication.findOne({
@@ -141,9 +154,23 @@ const updateInternshipStatus = asyncHandler(async (req, res) => {
       "preferredDomain"
     ];
 
+    const programs = await Program.find({ isPublished: true });
+    const getMappedDomain = (val) => {
+      if (!val) return val;
+      if (val.trim().toLowerCase() === "aiml") {
+        return "Artificial Intelligence & Machine Learning";
+      }
+      const match = programs.find(p => isDomainMatch(p.internshipDomain, val) || isDomainMatch(p.title, val));
+      return match ? match.internshipDomain : val;
+    };
+
     allowedUpdates.forEach(field => {
       if (req.body[field] !== undefined) {
-        application[field] = req.body[field];
+        if (field === "preferredDomain") {
+          application[field] = getMappedDomain(req.body[field]);
+        } else {
+          application[field] = req.body[field];
+        }
       }
     });
     

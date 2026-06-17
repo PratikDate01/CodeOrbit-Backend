@@ -64,7 +64,7 @@ userSchema.pre("save", async function (next) {
 });
 
 
-// Cascade delete related records when user is deleted
+// Cascade delete related records when user is deleted (document-level)
 userSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
   try {
     const mongoose = require("mongoose");
@@ -85,5 +85,36 @@ userSchema.pre("deleteOne", { document: true, query: false }, async function (ne
     next(err);
   }
 });
+
+// Cascade delete related records when user is deleted (query-level)
+const handleUserQueryDelete = async function (next) {
+  try {
+    const mongoose = require("mongoose");
+    const Enrollment = mongoose.model("Enrollment");
+    const InternshipApplication = mongoose.model("InternshipApplication");
+    const LMSActivityProgress = mongoose.model("LMSActivityProgress");
+    const LMSCertificate = mongoose.model("LMSCertificate");
+    const AssignmentSubmission = mongoose.model("AssignmentSubmission");
+
+    const query = this.getQuery();
+    const users = await this.model.find(query);
+    const userIds = users.map(u => u._id);
+
+    if (userIds.length > 0) {
+      await Enrollment.deleteMany({ user: { $in: userIds } });
+      await InternshipApplication.deleteMany({ user: { $in: userIds } });
+      await LMSActivityProgress.deleteMany({ user: { $in: userIds } });
+      await LMSCertificate.deleteMany({ user: { $in: userIds } });
+      await AssignmentSubmission.deleteMany({ user: { $in: userIds } });
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+userSchema.pre("deleteOne", { document: false, query: true }, handleUserQueryDelete);
+userSchema.pre("deleteMany", handleUserQueryDelete);
+userSchema.pre("findOneAndDelete", handleUserQueryDelete);
 
 module.exports = mongoose.model("User", userSchema);

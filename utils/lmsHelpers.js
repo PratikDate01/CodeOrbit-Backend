@@ -6,6 +6,74 @@ const Module = require("../models/Module");
 const Lesson = require("../models/Lesson");
 const Program = require("../models/Program");
 
+// Helper function isDomainMatch to compare domains flexibly
+const isDomainMatch = (domainA, domainB) => {
+  if (!domainA || !domainB) return false;
+
+  const normalize = (str) => {
+    return str.trim().toLowerCase();
+  };
+
+  const getCandidates = (str) => {
+    const list = [str];
+    const parenRegex = /\(([^)]+)\)/g;
+    let match;
+    while ((match = parenRegex.exec(str)) !== null) {
+      list.push(match[1]);
+    }
+    const cleanStr = str.replace(/\([^)]+\)/g, "").trim();
+    if (cleanStr) {
+      list.push(cleanStr);
+    }
+    return list.map(s => s.trim()).filter(Boolean);
+  };
+
+  const cleanForAcronym = (str) => {
+    return str
+      .replace(/&/g, "and")
+      .split(/[^a-zA-Z0-9]+/g)
+      .filter(Boolean);
+  };
+
+  const checkAcronym = (words, acronym) => {
+    if (acronym.length < 2) return false;
+    const cleanAcronym = acronym.toLowerCase();
+    
+    const stdAcronym = words.map(w => w[0]).join("").toLowerCase();
+    if (stdAcronym === cleanAcronym) return true;
+
+    const filteredAcronym = words
+      .filter(w => !["and", "or", "of", "the", "in", "to", "for"].includes(w.toLowerCase()))
+      .map(w => w[0])
+      .join("")
+      .toLowerCase();
+    if (filteredAcronym === cleanAcronym) return true;
+
+    return false;
+  };
+
+  const candidatesA = getCandidates(domainA);
+  const candidatesB = getCandidates(domainB);
+
+  for (const catA of candidatesA) {
+    for (const catB of candidatesB) {
+      const normA = normalize(catA);
+      const normB = normalize(catB);
+
+      if (normA === normB) return true;
+
+      // Check acronyms
+      const wordsA = cleanForAcronym(catA);
+      const wordsB = cleanForAcronym(catB);
+
+      if (wordsA.length === 1 && checkAcronym(wordsB, wordsA[0])) return true;
+      if (wordsB.length === 1 && checkAcronym(wordsA, wordsB[0])) return true;
+    }
+  }
+
+  return false;
+};
+
 /**
  * Auto-enroll a user into a program based on their internship domain
  * @param {string} userId 
@@ -42,7 +110,8 @@ const autoEnrollUser = async (userId, domain, applicationId) => {
     }
 
     // 2. Find the program matching the domain
-    const program = await Program.findOne({ internshipDomain: domain, isPublished: true });
+    const programs = await Program.find({ isPublished: true });
+    const program = programs.find(p => isDomainMatch(p.internshipDomain, domain) || isDomainMatch(p.title, domain));
     if (!program) {
       console.warn(`No published program found for domain: ${domain}`);
       return null;
@@ -164,4 +233,5 @@ const updateEnrollmentProgress = async (enrollmentId) => {
 module.exports = {
   updateEnrollmentProgress,
   autoEnrollUser,
+  isDomainMatch,
 };

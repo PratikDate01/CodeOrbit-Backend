@@ -47,4 +47,34 @@ const enrollmentSchema = new mongoose.Schema(
 // Unique enrollment per internship application
 enrollmentSchema.index({ internshipApplication: 1 }, { unique: true, sparse: true });
 
+// Pre-save hook to prevent saving enrollments with non-existent references
+enrollmentSchema.pre("save", async function (next) {
+  try {
+    const User = mongoose.model("User");
+    const Program = mongoose.model("Program");
+    const InternshipApplication = mongoose.model("InternshipApplication");
+
+    const userExists = await User.exists({ _id: this.user });
+    if (!userExists) {
+      return next(new Error(`Referenced user does not exist: ${this.user}`));
+    }
+
+    const programExists = await Program.exists({ _id: this.program });
+    if (!programExists) {
+      return next(new Error(`Referenced program does not exist: ${this.program}`));
+    }
+
+    if (this.internshipApplication) {
+      const appExists = await InternshipApplication.exists({ _id: this.internshipApplication });
+      if (!appExists) {
+        return next(new Error(`Referenced internshipApplication does not exist: ${this.internshipApplication}`));
+      }
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = mongoose.model("Enrollment", enrollmentSchema);

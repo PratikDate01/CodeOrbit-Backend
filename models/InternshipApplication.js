@@ -97,7 +97,7 @@ const internshipApplicationSchema = mongoose.Schema(
 );
 
 
-// Cascade delete related records when application is deleted
+// Cascade delete related records when application is deleted (document-level)
 internshipApplicationSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
   try {
     const mongoose = require("mongoose");
@@ -122,6 +122,41 @@ internshipApplicationSchema.pre("deleteOne", { document: true, query: false }, a
     next(err);
   }
 });
+
+// Cascade delete related records when application is deleted (query-level)
+const handleAppQueryDelete = async function (next) {
+  try {
+    const mongoose = require("mongoose");
+    const Enrollment = mongoose.model("Enrollment");
+    const LMSActivityProgress = mongoose.model("LMSActivityProgress");
+    const LMSCertificate = mongoose.model("LMSCertificate");
+    const AssignmentSubmission = mongoose.model("AssignmentSubmission");
+
+    const query = this.getQuery();
+    const apps = await this.model.find(query);
+    const appIds = apps.map(app => app._id);
+
+    if (appIds.length > 0) {
+      const enrollments = await Enrollment.find({ internshipApplication: { $in: appIds } });
+      const enrollmentIds = enrollments.map(e => e._id);
+
+      if (enrollmentIds.length > 0) {
+        await Enrollment.deleteMany({ _id: { $in: enrollmentIds } });
+        await LMSActivityProgress.deleteMany({ enrollment: { $in: enrollmentIds } });
+        await LMSCertificate.deleteMany({ enrollment: { $in: enrollmentIds } });
+        await AssignmentSubmission.deleteMany({ enrollment: { $in: enrollmentIds } });
+      }
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
+internshipApplicationSchema.pre("deleteOne", { document: false, query: true }, handleAppQueryDelete);
+internshipApplicationSchema.pre("deleteMany", handleAppQueryDelete);
+internshipApplicationSchema.pre("findOneAndDelete", handleAppQueryDelete);
 
 module.exports = mongoose.model(
   "InternshipApplication",
